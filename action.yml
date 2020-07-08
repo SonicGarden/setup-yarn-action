@@ -1,10 +1,16 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: "Setup yarn"
+description: "Setup yarn with cache"
+author: aki77
 inputs:
-  myInput:              # change this
-    description: 'input description here'
-    default: 'default value if applicable'
+  cacheKeyPrefix:
+    description: "input description here"
+    default: "yarn"
+  installCommand:
+    description: "Yarn install command"
+    default: "yarn install"
+outputs:
+  cache-hit:
+    description: "A boolean value to indicate an exact match was found for the primary key"
 runs:
-  using: 'node12'
-  main: 'dist/index.js'
+  using: "node12"
+  main: "dist/index.js"
