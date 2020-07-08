@@ -7,11 +7,6 @@ import * as crypto from 'crypto'
 import * as util from 'util'
 import execa from 'execa'
 
-const getNodeVersion = async (): Promise<string> => {
-  const {stdout} = await execa.command('node --version')
-  return stdout
-}
-
 const yarnCacheDir = async (): Promise<string> => {
   const {stdout} = await execa.command('yarn cache dir')
   return stdout
@@ -30,14 +25,13 @@ async function run(): Promise<void> {
     const baseKey = [
       os.platform,
       'node',
-      await getNodeVersion(),
       process.env.NODE_ENV,
       cacheKeyPrefix
     ].join('-')
     const key = `${baseKey}-${await hashFile('yarn.lock')}`
     const restoreKeys = [baseKey]
 
-    const paths = [await yarnCacheDir(), 'node_modules']
+    const paths = [await yarnCacheDir()]
 
     const cacheKey = await cache.restoreCache(paths, key, restoreKeys)
     const cacheHit = !!cacheKey
@@ -45,7 +39,6 @@ async function run(): Promise<void> {
 
     if (cacheKey) {
       core.debug(`cache hit: ${cacheKey}`)
-      return
     }
 
     const installCommand = core.getInput('installCommand', {

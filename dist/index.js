@@ -3270,10 +3270,6 @@ const stream = __importStar(__webpack_require__(794));
 const crypto = __importStar(__webpack_require__(417));
 const util = __importStar(__webpack_require__(669));
 const execa_1 = __importDefault(__webpack_require__(955));
-const getNodeVersion = () => __awaiter(void 0, void 0, void 0, function* () {
-    const { stdout } = yield execa_1.default.command('node --version');
-    return stdout;
-});
 const yarnCacheDir = () => __awaiter(void 0, void 0, void 0, function* () {
     const { stdout } = yield execa_1.default.command('yarn cache dir');
     return stdout;
@@ -3291,19 +3287,17 @@ function run() {
             const baseKey = [
                 os.platform,
                 'node',
-                yield getNodeVersion(),
                 process.env.NODE_ENV,
                 cacheKeyPrefix
             ].join('-');
             const key = `${baseKey}-${yield hashFile('yarn.lock')}`;
             const restoreKeys = [baseKey];
-            const paths = [yield yarnCacheDir(), 'node_modules'];
+            const paths = [yield yarnCacheDir()];
             const cacheKey = yield cache.restoreCache(paths, key, restoreKeys);
             const cacheHit = !!cacheKey;
             core.setOutput('cache-hit', cacheHit.toString());
             if (cacheKey) {
                 core.debug(`cache hit: ${cacheKey}`);
-                return;
             }
             const installCommand = core.getInput('installCommand', {
                 required: true
