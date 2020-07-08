@@ -31,6 +31,7 @@ async function run(): Promise<void> {
       os.platform,
       'node',
       await getNodeVersion(),
+      process.env.NODE_ENV,
       cacheKeyPrefix
     ].join('-')
     const key = `${baseKey}-${await hashFile('yarn.lock')}`

@@ -3292,6 +3292,7 @@ function run() {
                 os.platform,
                 'node',
                 yield getNodeVersion(),
+                process.env.NODE_ENV,
                 cacheKeyPrefix
             ].join('-');
             const key = `${baseKey}-${yield hashFile('yarn.lock')}`;
