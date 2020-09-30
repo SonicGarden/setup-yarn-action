@@ -350,8 +350,8 @@ function copyFile(srcFile, destFile, force) {
 
 "use strict";
 
-/*!
- * Copyright 2020, OpenTelemetry Authors
+/*
+ * Copyright The OpenTelemetry Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -366,6 +366,7 @@ function copyFile(srcFile, destFile, force) {
  * limitations under the License.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.defaultGetter = void 0;
 /**
  * Default getter which just does a simple property access. Returns
  * undefined if the key is not set.
@@ -1331,7 +1332,7 @@ module.exports = eval("require")("encoding");
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  XMLNode = __webpack_require__(855);
+  XMLNode = __webpack_require__(257);
 
   NodeType = __webpack_require__(683);
 
@@ -1432,8 +1433,8 @@ module.exports._enoent = enoent;
 
 "use strict";
 
-/*!
- * Copyright 2020, OpenTelemetry Authors
+/*
+ * Copyright The OpenTelemetry Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1448,33 +1449,38 @@ module.exports._enoent = enoent;
  * limitations under the License.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-const getter_1 = __webpack_require__(2);
-const NoopHttpTextPropagator_1 = __webpack_require__(744);
-const setter_1 = __webpack_require__(753);
-const context_1 = __webpack_require__(77);
-const contextApi = context_1.ContextAPI.getInstance();
+exports.PropagationAPI = void 0;
+var getter_1 = __webpack_require__(2);
+var NoopHttpTextPropagator_1 = __webpack_require__(744);
+var setter_1 = __webpack_require__(753);
+var context_1 = __webpack_require__(77);
+var global_utils_1 = __webpack_require__(976);
+var contextApi = context_1.ContextAPI.getInstance();
 /**
  * Singleton object which represents the entry point to the OpenTelemetry Propagation API
  */
-class PropagationAPI {
+var PropagationAPI = /** @class */ (function () {
     /** Empty private constructor prevents end users from constructing a new instance of the API */
-    constructor() {
-        this._propagator = NoopHttpTextPropagator_1.NOOP_HTTP_TEXT_PROPAGATOR;
+    function PropagationAPI() {
     }
     /** Get the singleton instance of the Propagator API */
-    static getInstance() {
+    PropagationAPI.getInstance = function () {
         if (!this._instance) {
             this._instance = new PropagationAPI();
         }
         return this._instance;
-    }
+    };
     /**
      * Set the current propagator. Returns the initialized propagator
      */
-    setGlobalPropagator(propagator) {
-        this._propagator = propagator;
+    PropagationAPI.prototype.setGlobalPropagator = function (propagator) {
+        if (global_utils_1._global[global_utils_1.GLOBAL_PROPAGATION_API_KEY]) {
+            // global propagator has already been set
+            return this._getGlobalPropagator();
+        }
+        global_utils_1._global[global_utils_1.GLOBAL_PROPAGATION_API_KEY] = global_utils_1.makeGetter(global_utils_1.API_BACKWARDS_COMPATIBILITY_VERSION, propagator, NoopHttpTextPropagator_1.NOOP_HTTP_TEXT_PROPAGATOR);
         return propagator;
-    }
+    };
     /**
      * Inject context into a carrier to be propagated inter-process
      *
@@ -1482,9 +1488,11 @@ class PropagationAPI {
      * @param setter Function used to set values on the carrier
      * @param context Context carrying tracing data to inject. Defaults to the currently active context.
      */
-    inject(carrier, setter = setter_1.defaultSetter, context = contextApi.active()) {
-        return this._propagator.inject(context, carrier, setter);
-    }
+    PropagationAPI.prototype.inject = function (carrier, setter, context) {
+        if (setter === void 0) { setter = setter_1.defaultSetter; }
+        if (context === void 0) { context = contextApi.active(); }
+        return this._getGlobalPropagator().inject(context, carrier, setter);
+    };
     /**
      * Extract context from a carrier
      *
@@ -1492,16 +1500,40 @@ class PropagationAPI {
      * @param getter Function used to extract keys from a carrier
      * @param context Context which the newly created context will inherit from. Defaults to the currently active context.
      */
-    extract(carrier, getter = getter_1.defaultGetter, context = contextApi.active()) {
-        return this._propagator.extract(context, carrier, getter);
-    }
-}
+    PropagationAPI.prototype.extract = function (carrier, getter, context) {
+        if (getter === void 0) { getter = getter_1.defaultGetter; }
+        if (context === void 0) { context = contextApi.active(); }
+        return this._getGlobalPropagator().extract(context, carrier, getter);
+    };
+    /** Remove the global propagator */
+    PropagationAPI.prototype.disable = function () {
+        delete global_utils_1._global[global_utils_1.GLOBAL_PROPAGATION_API_KEY];
+    };
+    PropagationAPI.prototype._getGlobalPropagator = function () {
+        var _a, _b;
+        return ((_b = (_a = global_utils_1._global[global_utils_1.GLOBAL_PROPAGATION_API_KEY]) === null || _a === void 0 ? void 0 : _a.call(global_utils_1._global, global_utils_1.API_BACKWARDS_COMPATIBILITY_VERSION)) !== null && _b !== void 0 ? _b : NoopHttpTextPropagator_1.NOOP_HTTP_TEXT_PROPAGATOR);
+    };
+    return PropagationAPI;
+}());
 exports.PropagationAPI = PropagationAPI;
 //# sourceMappingURL=propagation.js.map
 
 /***/ }),
 /* 23 */,
-/* 24 */,
+/* 24 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+var _default = '00000000-0000-0000-0000-000000000000';
+exports.default = _default;
+
+/***/ }),
 /* 25 */,
 /* 26 */,
 /* 27 */,
@@ -1510,7 +1542,30 @@ exports.PropagationAPI = PropagationAPI;
 /* 30 */,
 /* 31 */,
 /* 32 */,
-/* 33 */,
+/* 33 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+/*
+ * Copyright The OpenTelemetry Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+//# sourceMappingURL=HttpTextPropagator.js.map
+
+/***/ }),
 /* 34 */,
 /* 35 */,
 /* 36 */,
@@ -1522,22 +1577,8 @@ exports.PropagationAPI = PropagationAPI;
 
 "use strict";
 
-/*!
- * Copyright 2019, OpenTelemetry Authors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.EntryTtl = void 0;
 /**
  * EntryTtl is an integer that represents number of hops an entry can propagate.
  *
@@ -1563,8 +1604,8 @@ var EntryTtl;
 
 "use strict";
 
-/*!
- * Copyright 2019, OpenTelemetry Authors
+/*
+ * Copyright The OpenTelemetry Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1579,6 +1620,7 @@ var EntryTtl;
  * limitations under the License.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.ValueType = void 0;
 /** The Type of value. It describes how the data is reported. */
 var ValueType;
 (function (ValueType) {
@@ -1654,8 +1696,8 @@ module.exports = ["ac","com.ac","edu.ac","gov.ac","net.ac","mil.ac","org.ac","ad
 
 "use strict";
 
-/*!
- * Copyright 2019, OpenTelemetry Authors
+/*
+ * Copyright The OpenTelemetry Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1670,24 +1712,28 @@ module.exports = ["ac","com.ac","edu.ac","gov.ac","net.ac","mil.ac","org.ac","ad
  * limitations under the License.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-const context_1 = __webpack_require__(560);
-class NoopContextManager {
-    active() {
+exports.NoopContextManager = void 0;
+var context_1 = __webpack_require__(560);
+var NoopContextManager = /** @class */ (function () {
+    function NoopContextManager() {
+    }
+    NoopContextManager.prototype.active = function () {
         return context_1.Context.ROOT_CONTEXT;
-    }
-    with(context, fn) {
+    };
+    NoopContextManager.prototype.with = function (context, fn) {
         return fn();
-    }
-    bind(target, context) {
+    };
+    NoopContextManager.prototype.bind = function (target, context) {
         return target;
-    }
-    enable() {
+    };
+    NoopContextManager.prototype.enable = function () {
         return this;
-    }
-    disable() {
+    };
+    NoopContextManager.prototype.disable = function () {
         return this;
-    }
-}
+    };
+    return NoopContextManager;
+}());
 exports.NoopContextManager = NoopContextManager;
 //# sourceMappingURL=NoopContextManager.js.map
 
@@ -1740,7 +1786,15 @@ module.exports = function(dst, src) {
 
 
 /***/ }),
-/* 70 */,
+/* 70 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+//# sourceMappingURL=trace_state.js.map
+
+/***/ }),
 /* 71 */
 /***/ (function() {
 
@@ -1762,8 +1816,8 @@ if (typeof Symbol === undefined || !Symbol.asyncIterator) {
 
 "use strict";
 
-/*!
- * Copyright 2020, OpenTelemetry Authors
+/*
+ * Copyright The OpenTelemetry Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1778,54 +1832,71 @@ if (typeof Symbol === undefined || !Symbol.asyncIterator) {
  * limitations under the License.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-const context_base_1 = __webpack_require__(459);
+exports.ContextAPI = void 0;
+var context_base_1 = __webpack_require__(459);
+var global_utils_1 = __webpack_require__(976);
+var NOOP_CONTEXT_MANAGER = new context_base_1.NoopContextManager();
 /**
  * Singleton object which represents the entry point to the OpenTelemetry Context API
  */
-class ContextAPI {
+var ContextAPI = /** @class */ (function () {
     /** Empty private constructor prevents end users from constructing a new instance of the API */
-    constructor() {
-        this._contextManager = new context_base_1.NoopContextManager();
+    function ContextAPI() {
     }
     /** Get the singleton instance of the Context API */
-    static getInstance() {
+    ContextAPI.getInstance = function () {
         if (!this._instance) {
             this._instance = new ContextAPI();
         }
         return this._instance;
-    }
+    };
     /**
      * Set the current context manager. Returns the initialized context manager
      */
-    setGlobalContextManager(contextManager) {
-        this._contextManager = contextManager;
+    ContextAPI.prototype.setGlobalContextManager = function (contextManager) {
+        if (global_utils_1._global[global_utils_1.GLOBAL_CONTEXT_MANAGER_API_KEY]) {
+            // global context manager has already been set
+            return this._getContextManager();
+        }
+        global_utils_1._global[global_utils_1.GLOBAL_CONTEXT_MANAGER_API_KEY] = global_utils_1.makeGetter(global_utils_1.API_BACKWARDS_COMPATIBILITY_VERSION, contextManager, NOOP_CONTEXT_MANAGER);
         return contextManager;
-    }
+    };
     /**
      * Get the currently active context
      */
-    active() {
-        return this._contextManager.active();
-    }
+    ContextAPI.prototype.active = function () {
+        return this._getContextManager().active();
+    };
     /**
      * Execute a function with an active context
      *
      * @param context context to be active during function execution
      * @param fn function to execute in a context
      */
-    with(context, fn) {
-        return this._contextManager.with(context, fn);
-    }
+    ContextAPI.prototype.with = function (context, fn) {
+        return this._getContextManager().with(context, fn);
+    };
     /**
      * Bind a context to a target function or event emitter
      *
      * @param target function or event emitter to bind
      * @param context context to bind to the event emitter or function. Defaults to the currently active context
      */
-    bind(target, context = this.active()) {
-        return this._contextManager.bind(target, context);
-    }
-}
+    ContextAPI.prototype.bind = function (target, context) {
+        if (context === void 0) { context = this.active(); }
+        return this._getContextManager().bind(target, context);
+    };
+    ContextAPI.prototype._getContextManager = function () {
+        var _a, _b;
+        return ((_b = (_a = global_utils_1._global[global_utils_1.GLOBAL_CONTEXT_MANAGER_API_KEY]) === null || _a === void 0 ? void 0 : _a.call(global_utils_1._global, global_utils_1.API_BACKWARDS_COMPATIBILITY_VERSION)) !== null && _b !== void 0 ? _b : NOOP_CONTEXT_MANAGER);
+    };
+    /** Disable and remove the global context manager */
+    ContextAPI.prototype.disable = function () {
+        this._getContextManager().disable();
+        delete global_utils_1._global[global_utils_1.GLOBAL_CONTEXT_MANAGER_API_KEY];
+    };
+    return ContextAPI;
+}());
 exports.ContextAPI = ContextAPI;
 //# sourceMappingURL=context.js.map
 
@@ -1856,7 +1927,31 @@ module.exports.default = pathKey;
 /* 79 */,
 /* 80 */,
 /* 81 */,
-/* 82 */,
+/* 82 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+// We use any as a valid input type
+/* eslint-disable @typescript-eslint/no-explicit-any */
+Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * Sanitizes an input into a string so it can be passed into issueCommand safely
+ * @param input input to sanitize into a string
+ */
+function toCommandValue(input) {
+    if (input === null || input === undefined) {
+        return '';
+    }
+    else if (typeof input === 'string' || input instanceof String) {
+        return input;
+    }
+    return JSON.stringify(input);
+}
+exports.toCommandValue = toCommandValue;
+//# sourceMappingURL=utils.js.map
+
+/***/ }),
 /* 83 */,
 /* 84 */,
 /* 85 */,
@@ -3035,16 +3130,99 @@ function regExpEscape (s) {
 
 /***/ }),
 /* 94 */,
-/* 95 */,
+/* 95 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+/*
+ * Copyright The OpenTelemetry Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+//# sourceMappingURL=link.js.map
+
+/***/ }),
 /* 96 */,
 /* 97 */,
 /* 98 */,
 /* 99 */,
 /* 100 */,
 /* 101 */,
-/* 102 */,
+/* 102 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+// For internal use, subject to change.
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result["default"] = mod;
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+// We use any as a valid input type
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const fs = __importStar(__webpack_require__(747));
+const os = __importStar(__webpack_require__(87));
+const utils_1 = __webpack_require__(82);
+function issueCommand(command, message) {
+    const filePath = process.env[`GITHUB_${command}`];
+    if (!filePath) {
+        throw new Error(`Unable to find environment variable for file command ${command}`);
+    }
+    if (!fs.existsSync(filePath)) {
+        throw new Error(`Missing file at path: ${filePath}`);
+    }
+    fs.appendFileSync(filePath, `${utils_1.toCommandValue(message)}${os.EOL}`, {
+        encoding: 'utf8'
+    });
+}
+exports.issueCommand = issueCommand;
+//# sourceMappingURL=file-command.js.map
+
+/***/ }),
 /* 103 */,
-/* 104 */,
+/* 104 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _validate = _interopRequireDefault(__webpack_require__(676));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function version(uuid) {
+  if (!(0, _validate.default)(uuid)) {
+    throw TypeError('Invalid UUID');
+  }
+
+  return parseInt(uuid.substr(14, 1), 16);
+}
+
+var _default = version;
+exports.default = _default;
+
+/***/ }),
 /* 105 */,
 /* 106 */
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
@@ -3318,7 +3496,30 @@ exports.AbortSignal = AbortSignal;
 
 
 /***/ }),
-/* 107 */,
+/* 107 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+/*
+ * Copyright The OpenTelemetry Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+//# sourceMappingURL=Observation.js.map
+
+/***/ }),
 /* 108 */,
 /* 109 */,
 /* 110 */,
@@ -3574,8 +3775,8 @@ module.exports = require("child_process");
 
 "use strict";
 
-/*!
- * Copyright 2020, OpenTelemetry Authors
+/*
+ * Copyright The OpenTelemetry Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -3590,42 +3791,53 @@ module.exports = require("child_process");
  * limitations under the License.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-const NoopMeterProvider_1 = __webpack_require__(450);
+exports.MetricsAPI = void 0;
+var NoopMeterProvider_1 = __webpack_require__(450);
+var global_utils_1 = __webpack_require__(976);
 /**
  * Singleton object which represents the entry point to the OpenTelemetry Metrics API
  */
-class MetricsAPI {
+var MetricsAPI = /** @class */ (function () {
     /** Empty private constructor prevents end users from constructing a new instance of the API */
-    constructor() {
-        this._meterProvider = NoopMeterProvider_1.NOOP_METER_PROVIDER;
+    function MetricsAPI() {
     }
     /** Get the singleton instance of the Metrics API */
-    static getInstance() {
+    MetricsAPI.getInstance = function () {
         if (!this._instance) {
             this._instance = new MetricsAPI();
         }
         return this._instance;
-    }
+    };
     /**
      * Set the current global meter. Returns the initialized global meter provider.
      */
-    setGlobalMeterProvider(provider) {
-        this._meterProvider = provider;
+    MetricsAPI.prototype.setGlobalMeterProvider = function (provider) {
+        if (global_utils_1._global[global_utils_1.GLOBAL_METRICS_API_KEY]) {
+            // global meter provider has already been set
+            return this.getMeterProvider();
+        }
+        global_utils_1._global[global_utils_1.GLOBAL_METRICS_API_KEY] = global_utils_1.makeGetter(global_utils_1.API_BACKWARDS_COMPATIBILITY_VERSION, provider, NoopMeterProvider_1.NOOP_METER_PROVIDER);
         return provider;
-    }
+    };
     /**
      * Returns the global meter provider.
      */
-    getMeterProvider() {
-        return this._meterProvider;
-    }
+    MetricsAPI.prototype.getMeterProvider = function () {
+        var _a, _b;
+        return ((_b = (_a = global_utils_1._global[global_utils_1.GLOBAL_METRICS_API_KEY]) === null || _a === void 0 ? void 0 : _a.call(global_utils_1._global, global_utils_1.API_BACKWARDS_COMPATIBILITY_VERSION)) !== null && _b !== void 0 ? _b : NoopMeterProvider_1.NOOP_METER_PROVIDER);
+    };
     /**
      * Returns a meter from the global meter provider.
      */
-    getMeter(name, version) {
+    MetricsAPI.prototype.getMeter = function (name, version) {
         return this.getMeterProvider().getMeter(name, version);
-    }
-}
+    };
+    /** Remove the global meter provider */
+    MetricsAPI.prototype.disable = function () {
+        delete global_utils_1._global[global_utils_1.GLOBAL_METRICS_API_KEY];
+    };
+    return MetricsAPI;
+}());
 exports.MetricsAPI = MetricsAPI;
 //# sourceMappingURL=metrics.js.map
 
@@ -3920,126 +4132,311 @@ exports.debug = debug; // for test
 /***/ }),
 /* 142 */,
 /* 143 */,
-/* 144 */,
-/* 145 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
-
-"use strict";
-
-const pump = __webpack_require__(453);
-const bufferStream = __webpack_require__(966);
-
-class MaxBufferError extends Error {
-	constructor() {
-		super('maxBuffer exceeded');
-		this.name = 'MaxBufferError';
-	}
-}
-
-async function getStream(inputStream, options) {
-	if (!inputStream) {
-		return Promise.reject(new Error('Expected a stream'));
-	}
-
-	options = {
-		maxBuffer: Infinity,
-		...options
-	};
-
-	const {maxBuffer} = options;
-
-	let stream;
-	await new Promise((resolve, reject) => {
-		const rejectPromise = error => {
-			if (error) { // A null check
-				error.bufferedData = stream.getBufferedValue();
-			}
-
-			reject(error);
-		};
-
-		stream = pump(inputStream, bufferStream(options), error => {
-			if (error) {
-				rejectPromise(error);
-				return;
-			}
-
-			resolve();
-		});
-
-		stream.on('data', () => {
-			if (stream.getBufferedLength() > maxBuffer) {
-				rejectPromise(new MaxBufferError());
-			}
-		});
-	});
-
-	return stream.getBufferedValue();
-}
-
-module.exports = getStream;
-// TODO: Remove this for the next major release
-module.exports.default = getStream;
-module.exports.buffer = (stream, options) => getStream(stream, {...options, encoding: 'buffer'});
-module.exports.array = (stream, options) => getStream(stream, {...options, array: true});
-module.exports.MaxBufferError = MaxBufferError;
-
-
-/***/ }),
-/* 146 */,
-/* 147 */
+/* 144 */
 /***/ (function(module) {
 
-// API
-module.exports = state;
+/*! *****************************************************************************
+Copyright (c) Microsoft Corporation.
 
-/**
- * Creates initial state object
- * for iteration over list
- *
- * @param   {array|object} list - list to iterate over
- * @param   {function|null} sortMethod - function to use for keys sort,
- *                                     or `null` to keep them as is
- * @returns {object} - initial state object
- */
-function state(list, sortMethod)
-{
-  var isNamedList = !Array.isArray(list)
-    , initState =
-    {
-      index    : 0,
-      keyedList: isNamedList || sortMethod ? Object.keys(list) : null,
-      jobs     : {},
-      results  : isNamedList ? {} : [],
-      size     : isNamedList ? Object.keys(list).length : list.length
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+***************************************************************************** */
+/* global global, define, System, Reflect, Promise */
+var __extends;
+var __assign;
+var __rest;
+var __decorate;
+var __param;
+var __metadata;
+var __awaiter;
+var __generator;
+var __exportStar;
+var __values;
+var __read;
+var __spread;
+var __spreadArrays;
+var __await;
+var __asyncGenerator;
+var __asyncDelegator;
+var __asyncValues;
+var __makeTemplateObject;
+var __importStar;
+var __importDefault;
+var __classPrivateFieldGet;
+var __classPrivateFieldSet;
+var __createBinding;
+(function (factory) {
+    var root = typeof global === "object" ? global : typeof self === "object" ? self : typeof this === "object" ? this : {};
+    if (typeof define === "function" && define.amd) {
+        define("tslib", ["exports"], function (exports) { factory(createExporter(root, createExporter(exports))); });
     }
-    ;
+    else if ( true && typeof module.exports === "object") {
+        factory(createExporter(root, createExporter(module.exports)));
+    }
+    else {
+        factory(createExporter(root));
+    }
+    function createExporter(exports, previous) {
+        if (exports !== root) {
+            if (typeof Object.create === "function") {
+                Object.defineProperty(exports, "__esModule", { value: true });
+            }
+            else {
+                exports.__esModule = true;
+            }
+        }
+        return function (id, v) { return exports[id] = previous ? previous(id, v) : v; };
+    }
+})
+(function (exporter) {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
 
-  if (sortMethod)
-  {
-    // sort array keys based on it's values
-    // sort object's keys just on own merit
-    initState.keyedList.sort(isNamedList ? sortMethod : function(a, b)
-    {
-      return sortMethod(list[a], list[b]);
+    __extends = function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+
+    __assign = Object.assign || function (t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+        }
+        return t;
+    };
+
+    __rest = function (s, e) {
+        var t = {};
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+            t[p] = s[p];
+        if (s != null && typeof Object.getOwnPropertySymbols === "function")
+            for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+                if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                    t[p[i]] = s[p[i]];
+            }
+        return t;
+    };
+
+    __decorate = function (decorators, target, key, desc) {
+        var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+        if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+        else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+        return c > 3 && r && Object.defineProperty(target, key, r), r;
+    };
+
+    __param = function (paramIndex, decorator) {
+        return function (target, key) { decorator(target, key, paramIndex); }
+    };
+
+    __metadata = function (metadataKey, metadataValue) {
+        if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(metadataKey, metadataValue);
+    };
+
+    __awaiter = function (thisArg, _arguments, P, generator) {
+        function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+        return new (P || (P = Promise))(function (resolve, reject) {
+            function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+            function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+            function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+            step((generator = generator.apply(thisArg, _arguments || [])).next());
+        });
+    };
+
+    __generator = function (thisArg, body) {
+        var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+        return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+        function verb(n) { return function (v) { return step([n, v]); }; }
+        function step(op) {
+            if (f) throw new TypeError("Generator is already executing.");
+            while (_) try {
+                if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+                if (y = 0, t) op = [op[0] & 2, t.value];
+                switch (op[0]) {
+                    case 0: case 1: t = op; break;
+                    case 4: _.label++; return { value: op[1], done: false };
+                    case 5: _.label++; y = op[1]; op = [0]; continue;
+                    case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                    default:
+                        if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                        if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                        if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                        if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                        if (t[2]) _.ops.pop();
+                        _.trys.pop(); continue;
+                }
+                op = body.call(thisArg, _);
+            } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+            if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+        }
+    };
+
+    __exportStar = function(m, o) {
+        for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(o, p)) __createBinding(o, m, p);
+    };
+
+    __createBinding = Object.create ? (function(o, m, k, k2) {
+        if (k2 === undefined) k2 = k;
+        Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    }) : (function(o, m, k, k2) {
+        if (k2 === undefined) k2 = k;
+        o[k2] = m[k];
     });
-  }
 
-  return initState;
-}
+    __values = function (o) {
+        var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
+        if (m) return m.call(o);
+        if (o && typeof o.length === "number") return {
+            next: function () {
+                if (o && i >= o.length) o = void 0;
+                return { value: o && o[i++], done: !o };
+            }
+        };
+        throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
+    };
+
+    __read = function (o, n) {
+        var m = typeof Symbol === "function" && o[Symbol.iterator];
+        if (!m) return o;
+        var i = m.call(o), r, ar = [], e;
+        try {
+            while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+        }
+        catch (error) { e = { error: error }; }
+        finally {
+            try {
+                if (r && !r.done && (m = i["return"])) m.call(i);
+            }
+            finally { if (e) throw e.error; }
+        }
+        return ar;
+    };
+
+    __spread = function () {
+        for (var ar = [], i = 0; i < arguments.length; i++)
+            ar = ar.concat(__read(arguments[i]));
+        return ar;
+    };
+
+    __spreadArrays = function () {
+        for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+        for (var r = Array(s), k = 0, i = 0; i < il; i++)
+            for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+                r[k] = a[j];
+        return r;
+    };
+
+    __await = function (v) {
+        return this instanceof __await ? (this.v = v, this) : new __await(v);
+    };
+
+    __asyncGenerator = function (thisArg, _arguments, generator) {
+        if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+        var g = generator.apply(thisArg, _arguments || []), i, q = [];
+        return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i;
+        function verb(n) { if (g[n]) i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; }
+        function resume(n, v) { try { step(g[n](v)); } catch (e) { settle(q[0][3], e); } }
+        function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r);  }
+        function fulfill(value) { resume("next", value); }
+        function reject(value) { resume("throw", value); }
+        function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }
+    };
+
+    __asyncDelegator = function (o) {
+        var i, p;
+        return i = {}, verb("next"), verb("throw", function (e) { throw e; }), verb("return"), i[Symbol.iterator] = function () { return this; }, i;
+        function verb(n, f) { i[n] = o[n] ? function (v) { return (p = !p) ? { value: __await(o[n](v)), done: n === "return" } : f ? f(v) : v; } : f; }
+    };
+
+    __asyncValues = function (o) {
+        if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+        var m = o[Symbol.asyncIterator], i;
+        return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+        function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+        function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+    };
+
+    __makeTemplateObject = function (cooked, raw) {
+        if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
+        return cooked;
+    };
+
+    var __setModuleDefault = Object.create ? (function(o, v) {
+        Object.defineProperty(o, "default", { enumerable: true, value: v });
+    }) : function(o, v) {
+        o["default"] = v;
+    };
+
+    __importStar = function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+
+    __importDefault = function (mod) {
+        return (mod && mod.__esModule) ? mod : { "default": mod };
+    };
+
+    __classPrivateFieldGet = function (receiver, privateMap) {
+        if (!privateMap.has(receiver)) {
+            throw new TypeError("attempted to get private field on non-instance");
+        }
+        return privateMap.get(receiver);
+    };
+
+    __classPrivateFieldSet = function (receiver, privateMap, value) {
+        if (!privateMap.has(receiver)) {
+            throw new TypeError("attempted to set private field on non-instance");
+        }
+        privateMap.set(receiver, value);
+        return value;
+    };
+
+    exporter("__extends", __extends);
+    exporter("__assign", __assign);
+    exporter("__rest", __rest);
+    exporter("__decorate", __decorate);
+    exporter("__param", __param);
+    exporter("__metadata", __metadata);
+    exporter("__awaiter", __awaiter);
+    exporter("__generator", __generator);
+    exporter("__exportStar", __exportStar);
+    exporter("__createBinding", __createBinding);
+    exporter("__values", __values);
+    exporter("__read", __read);
+    exporter("__spread", __spread);
+    exporter("__spreadArrays", __spreadArrays);
+    exporter("__await", __await);
+    exporter("__asyncGenerator", __asyncGenerator);
+    exporter("__asyncDelegator", __asyncDelegator);
+    exporter("__asyncValues", __asyncValues);
+    exporter("__makeTemplateObject", __makeTemplateObject);
+    exporter("__importStar", __importStar);
+    exporter("__importDefault", __importDefault);
+    exporter("__classPrivateFieldGet", __classPrivateFieldGet);
+    exporter("__classPrivateFieldSet", __classPrivateFieldSet);
+});
 
 
 /***/ }),
-/* 148 */,
-/* 149 */,
-/* 150 */,
-/* 151 */
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
+/* 145 */
+/***/ (function(__unusedmodule, exports) {
 
 "use strict";
 
-/*!
- * Copyright 2020, OpenTelemetry Authors
+/*
+ * Copyright The OpenTelemetry Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -4054,25 +4451,93 @@ function state(list, sortMethod)
  * limitations under the License.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-const NoopSpan_1 = __webpack_require__(767);
+exports._globalThis = void 0;
+/** only globals that common to node and browsers are allowed */
+// eslint-disable-next-line node/no-unsupported-features/es-builtins
+exports._globalThis = typeof globalThis === 'object' ? globalThis : global;
+//# sourceMappingURL=globalThis.js.map
+
+/***/ }),
+/* 146 */,
+/* 147 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+
+exports.fromCallback = function (fn) {
+  return Object.defineProperty(function () {
+    if (typeof arguments[arguments.length - 1] === 'function') fn.apply(this, arguments)
+    else {
+      return new Promise((resolve, reject) => {
+        arguments[arguments.length] = (err, res) => {
+          if (err) return reject(err)
+          resolve(res)
+        }
+        arguments.length++
+        fn.apply(this, arguments)
+      })
+    }
+  }, 'name', { value: fn.name })
+}
+
+exports.fromPromise = function (fn) {
+  return Object.defineProperty(function () {
+    const cb = arguments[arguments.length - 1]
+    if (typeof cb !== 'function') return fn.apply(this, arguments)
+    else fn.apply(this, arguments).then(r => cb(null, r), cb)
+  }, 'name', { value: fn.name })
+}
+
+
+/***/ }),
+/* 148 */,
+/* 149 */,
+/* 150 */,
+/* 151 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+/*
+ * Copyright The OpenTelemetry Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.NOOP_TRACER = exports.NoopTracer = void 0;
+var NoopSpan_1 = __webpack_require__(767);
 /**
  * No-op implementations of {@link Tracer}.
  */
-class NoopTracer {
-    getCurrentSpan() {
-        return NoopSpan_1.NOOP_SPAN;
+var NoopTracer = /** @class */ (function () {
+    function NoopTracer() {
     }
+    NoopTracer.prototype.getCurrentSpan = function () {
+        return NoopSpan_1.NOOP_SPAN;
+    };
     // startSpan starts a noop span.
-    startSpan(name, options) {
+    NoopTracer.prototype.startSpan = function (name, options) {
         return NoopSpan_1.NOOP_SPAN;
-    }
-    withSpan(span, fn) {
+    };
+    NoopTracer.prototype.withSpan = function (span, fn) {
         return fn();
-    }
-    bind(target, span) {
+    };
+    NoopTracer.prototype.bind = function (target, span) {
         return target;
-    }
-}
+    };
+    return NoopTracer;
+}());
 exports.NoopTracer = NoopTracer;
 exports.NOOP_TRACER = new NoopTracer();
 //# sourceMappingURL=NoopTracer.js.map
@@ -4276,7 +4741,15 @@ function runJob(iterator, key, item, callback)
 
 
 /***/ }),
-/* 158 */,
+/* 158 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+//# sourceMappingURL=Time.js.map
+
+/***/ }),
 /* 159 */,
 /* 160 */,
 /* 161 */,
@@ -4285,8 +4758,8 @@ function runJob(iterator, key, item, callback)
 
 "use strict";
 
-/*!
- * Copyright 2019, OpenTelemetry Authors
+/*
+ * Copyright The OpenTelemetry Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -4301,16 +4774,22 @@ function runJob(iterator, key, item, callback)
  * limitations under the License.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-const NoopTracer_1 = __webpack_require__(151);
+exports.NOOP_TRACER_PROVIDER = exports.NoopTracerProvider = void 0;
+var NoopTracer_1 = __webpack_require__(151);
 /**
- * An implementation of the {@link TracerProvider} which returns an impotent Tracer
- * for all calls to `getTracer`
+ * An implementation of the {@link TracerProvider} which returns an impotent
+ * Tracer for all calls to `getTracer`.
+ *
+ * All operations are no-op.
  */
-class NoopTracerProvider {
-    getTracer(_name, _version) {
-        return NoopTracer_1.NOOP_TRACER;
+var NoopTracerProvider = /** @class */ (function () {
+    function NoopTracerProvider() {
     }
-}
+    NoopTracerProvider.prototype.getTracer = function (_name, _version) {
+        return NoopTracer_1.NOOP_TRACER;
+    };
+    return NoopTracerProvider;
+}());
 exports.NoopTracerProvider = NoopTracerProvider;
 exports.NOOP_TRACER_PROVIDER = new NoopTracerProvider();
 //# sourceMappingURL=NoopTracerProvider.js.map
@@ -4318,7 +4797,30 @@ exports.NOOP_TRACER_PROVIDER = new NoopTracerProvider();
 /***/ }),
 /* 163 */,
 /* 164 */,
-/* 165 */,
+/* 165 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+/*
+ * Copyright The OpenTelemetry Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+//# sourceMappingURL=Plugin.js.map
+
+/***/ }),
 /* 166 */,
 /* 167 */,
 /* 168 */
@@ -4397,7 +4899,7 @@ exports.default = void 0;
 
 var _rng = _interopRequireDefault(__webpack_require__(733));
 
-var _bytesToUuid = _interopRequireDefault(__webpack_require__(940));
+var _stringify = _interopRequireDefault(__webpack_require__(855));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -4490,7 +4992,7 @@ function v1(options, buf, offset) {
     b[i + n] = node[n];
   }
 
-  return buf || (0, _bytesToUuid.default)(b);
+  return buf || (0, _stringify.default)(b);
 }
 
 var _default = v1;
@@ -4511,8 +5013,83 @@ exports.default = _default;
 /* 185 */,
 /* 186 */,
 /* 187 */,
-/* 188 */,
-/* 189 */,
+/* 188 */
+/***/ (function(module) {
+
+"use strict";
+
+
+const nativePromisePrototype = (async () => {})().constructor.prototype;
+const descriptors = ['then', 'catch', 'finally'].map(property => [
+	property,
+	Reflect.getOwnPropertyDescriptor(nativePromisePrototype, property)
+]);
+
+// The return value is a mixin of `childProcess` and `Promise`
+const mergePromise = (spawned, promise) => {
+	for (const [property, descriptor] of descriptors) {
+		// Starting the main `promise` is deferred to avoid consuming streams
+		const value = typeof promise === 'function' ?
+			(...args) => Reflect.apply(descriptor.value, promise(), args) :
+			descriptor.value.bind(promise);
+
+		Reflect.defineProperty(spawned, property, {...descriptor, value});
+	}
+
+	return spawned;
+};
+
+// Use promises instead of `child_process` events
+const getSpawnedPromise = spawned => {
+	return new Promise((resolve, reject) => {
+		spawned.on('exit', (exitCode, signal) => {
+			resolve({exitCode, signal});
+		});
+
+		spawned.on('error', error => {
+			reject(error);
+		});
+
+		if (spawned.stdin) {
+			spawned.stdin.on('error', error => {
+				reject(error);
+			});
+		}
+	});
+};
+
+module.exports = {
+	mergePromise,
+	getSpawnedPromise
+};
+
+
+
+/***/ }),
+/* 189 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+/*
+ * Copyright The OpenTelemetry Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+//# sourceMappingURL=ObserverResult.js.map
+
+/***/ }),
 /* 190 */,
 /* 191 */,
 /* 192 */,
@@ -4521,50 +5098,54 @@ exports.default = _default;
 /* 195 */,
 /* 196 */,
 /* 197 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
 
-module.exports = isexe
-isexe.sync = sync
+"use strict";
 
-var fs = __webpack_require__(747)
 
-function isexe (path, options, cb) {
-  fs.stat(path, function (er, stat) {
-    cb(er, er ? false : checkStat(stat, options))
-  })
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _validate = _interopRequireDefault(__webpack_require__(676));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function parse(uuid) {
+  if (!(0, _validate.default)(uuid)) {
+    throw TypeError('Invalid UUID');
+  }
+
+  let v;
+  const arr = new Uint8Array(16); // Parse ########-....-....-....-............
+
+  arr[0] = (v = parseInt(uuid.slice(0, 8), 16)) >>> 24;
+  arr[1] = v >>> 16 & 0xff;
+  arr[2] = v >>> 8 & 0xff;
+  arr[3] = v & 0xff; // Parse ........-####-....-....-............
+
+  arr[4] = (v = parseInt(uuid.slice(9, 13), 16)) >>> 8;
+  arr[5] = v & 0xff; // Parse ........-....-####-....-............
+
+  arr[6] = (v = parseInt(uuid.slice(14, 18), 16)) >>> 8;
+  arr[7] = v & 0xff; // Parse ........-....-....-####-............
+
+  arr[8] = (v = parseInt(uuid.slice(19, 23), 16)) >>> 8;
+  arr[9] = v & 0xff; // Parse ........-....-....-....-############
+  // (Use "/" to avoid 32-bit truncation when bit-shifting high-order bytes)
+
+  arr[10] = (v = parseInt(uuid.slice(24, 36), 16)) / 0x10000000000 & 0xff;
+  arr[11] = v / 0x100000000 & 0xff;
+  arr[12] = v >>> 24 & 0xff;
+  arr[13] = v >>> 16 & 0xff;
+  arr[14] = v >>> 8 & 0xff;
+  arr[15] = v & 0xff;
+  return arr;
 }
 
-function sync (path, options) {
-  return checkStat(fs.statSync(path), options)
-}
-
-function checkStat (stat, options) {
-  return stat.isFile() && checkMode(stat, options)
-}
-
-function checkMode (stat, options) {
-  var mod = stat.mode
-  var uid = stat.uid
-  var gid = stat.gid
-
-  var myUid = options.uid !== undefined ?
-    options.uid : process.getuid && process.getuid()
-  var myGid = options.gid !== undefined ?
-    options.gid : process.getgid && process.getgid()
-
-  var u = parseInt('100', 8)
-  var g = parseInt('010', 8)
-  var o = parseInt('001', 8)
-  var ug = u | g
-
-  var ret = (mod & o) ||
-    (mod & g) && gid === myGid ||
-    (mod & u) && uid === myUid ||
-    (mod & ug) && myUid === 0
-
-  return ret
-}
-
+var _default = parse;
+exports.default = _default;
 
 /***/ }),
 /* 198 */
@@ -4587,7 +5168,7 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
     var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
     __setModuleDefault(result, mod);
     return result;
 };
@@ -4719,7 +5300,30 @@ module.exports = require("punycode");
 /* 217 */,
 /* 218 */,
 /* 219 */,
-/* 220 */,
+/* 220 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+/*
+ * Copyright The OpenTelemetry Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+//# sourceMappingURL=SpanOptions.js.map
+
+/***/ }),
 /* 221 */,
 /* 222 */,
 /* 223 */,
@@ -4875,7 +5479,20 @@ exports.isTokenCredential = isTokenCredential;
 /* 235 */,
 /* 236 */,
 /* 237 */,
-/* 238 */,
+/* 238 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+var _default = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000)$/i;
+exports.default = _default;
+
+/***/ }),
 /* 239 */,
 /* 240 */,
 /* 241 */
@@ -4890,18 +5507,11 @@ Object.defineProperty(exports, "__esModule", {
 exports.default = _default;
 exports.URL = exports.DNS = void 0;
 
-var _bytesToUuid = _interopRequireDefault(__webpack_require__(940));
+var _stringify = _interopRequireDefault(__webpack_require__(855));
+
+var _parse = _interopRequireDefault(__webpack_require__(197));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function uuidToBytes(uuid) {
-  // Note: We assume we're being passed a valid uuid string
-  const bytes = [];
-  uuid.replace(/[a-fA-F0-9]{2}/g, function (hex) {
-    bytes.push(parseInt(hex, 16));
-  });
-  return bytes;
-}
 
 function stringToBytes(str) {
   str = unescape(encodeURIComponent(str)); // UTF8 escape
@@ -4927,19 +5537,20 @@ function _default(name, version, hashfunc) {
     }
 
     if (typeof namespace === 'string') {
-      namespace = uuidToBytes(namespace);
+      namespace = (0, _parse.default)(namespace);
     }
 
-    if (!Array.isArray(value)) {
-      throw TypeError('value must be an array of bytes');
-    }
-
-    if (!Array.isArray(namespace) || namespace.length !== 16) {
-      throw TypeError('namespace must be uuid string or an Array of 16 byte values');
-    } // Per 4.3
+    if (namespace.length !== 16) {
+      throw TypeError('Namespace must be array-like (16 iterable integer values, 0-255)');
+    } // Compute hash of namespace and value, Per 4.3
+    // Future: Use spread syntax when supported on all platforms, e.g. `bytes =
+    // hashfunc([...namespace, ... value])`
 
 
-    const bytes = hashfunc(namespace.concat(value));
+    let bytes = new Uint8Array(16 + value.length);
+    bytes.set(namespace);
+    bytes.set(value, namespace.length);
+    bytes = hashfunc(bytes);
     bytes[6] = bytes[6] & 0x0f | version;
     bytes[8] = bytes[8] & 0x3f | 0x80;
 
@@ -4953,7 +5564,7 @@ function _default(name, version, hashfunc) {
       return buf;
     }
 
-    return (0, _bytesToUuid.default)(bytes);
+    return (0, _stringify.default)(bytes);
   } // Function#name is not settable on some platforms (#270)
 
 
@@ -5255,7 +5866,797 @@ exports.downloadCacheStorageSDK = downloadCacheStorageSDK;
 /* 254 */,
 /* 255 */,
 /* 256 */,
-/* 257 */,
+/* 257 */
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+// Generated by CoffeeScript 1.12.7
+(function() {
+  var DocumentPosition, NodeType, XMLCData, XMLComment, XMLDeclaration, XMLDocType, XMLDummy, XMLElement, XMLNamedNodeMap, XMLNode, XMLNodeList, XMLProcessingInstruction, XMLRaw, XMLText, getValue, isEmpty, isFunction, isObject, ref1,
+    hasProp = {}.hasOwnProperty;
+
+  ref1 = __webpack_require__(582), isObject = ref1.isObject, isFunction = ref1.isFunction, isEmpty = ref1.isEmpty, getValue = ref1.getValue;
+
+  XMLElement = null;
+
+  XMLCData = null;
+
+  XMLComment = null;
+
+  XMLDeclaration = null;
+
+  XMLDocType = null;
+
+  XMLRaw = null;
+
+  XMLText = null;
+
+  XMLProcessingInstruction = null;
+
+  XMLDummy = null;
+
+  NodeType = null;
+
+  XMLNodeList = null;
+
+  XMLNamedNodeMap = null;
+
+  DocumentPosition = null;
+
+  module.exports = XMLNode = (function() {
+    function XMLNode(parent1) {
+      this.parent = parent1;
+      if (this.parent) {
+        this.options = this.parent.options;
+        this.stringify = this.parent.stringify;
+      }
+      this.value = null;
+      this.children = [];
+      this.baseURI = null;
+      if (!XMLElement) {
+        XMLElement = __webpack_require__(796);
+        XMLCData = __webpack_require__(657);
+        XMLComment = __webpack_require__(919);
+        XMLDeclaration = __webpack_require__(738);
+        XMLDocType = __webpack_require__(735);
+        XMLRaw = __webpack_require__(660);
+        XMLText = __webpack_require__(708);
+        XMLProcessingInstruction = __webpack_require__(491);
+        XMLDummy = __webpack_require__(956);
+        NodeType = __webpack_require__(683);
+        XMLNodeList = __webpack_require__(265);
+        XMLNamedNodeMap = __webpack_require__(451);
+        DocumentPosition = __webpack_require__(65);
+      }
+    }
+
+    Object.defineProperty(XMLNode.prototype, 'nodeName', {
+      get: function() {
+        return this.name;
+      }
+    });
+
+    Object.defineProperty(XMLNode.prototype, 'nodeType', {
+      get: function() {
+        return this.type;
+      }
+    });
+
+    Object.defineProperty(XMLNode.prototype, 'nodeValue', {
+      get: function() {
+        return this.value;
+      }
+    });
+
+    Object.defineProperty(XMLNode.prototype, 'parentNode', {
+      get: function() {
+        return this.parent;
+      }
+    });
+
+    Object.defineProperty(XMLNode.prototype, 'childNodes', {
+      get: function() {
+        if (!this.childNodeList || !this.childNodeList.nodes) {
+          this.childNodeList = new XMLNodeList(this.children);
+        }
+        return this.childNodeList;
+      }
+    });
+
+    Object.defineProperty(XMLNode.prototype, 'firstChild', {
+      get: function() {
+        return this.children[0] || null;
+      }
+    });
+
+    Object.defineProperty(XMLNode.prototype, 'lastChild', {
+      get: function() {
+        return this.children[this.children.length - 1] || null;
+      }
+    });
+
+    Object.defineProperty(XMLNode.prototype, 'previousSibling', {
+      get: function() {
+        var i;
+        i = this.parent.children.indexOf(this);
+        return this.parent.children[i - 1] || null;
+      }
+    });
+
+    Object.defineProperty(XMLNode.prototype, 'nextSibling', {
+      get: function() {
+        var i;
+        i = this.parent.children.indexOf(this);
+        return this.parent.children[i + 1] || null;
+      }
+    });
+
+    Object.defineProperty(XMLNode.prototype, 'ownerDocument', {
+      get: function() {
+        return this.document() || null;
+      }
+    });
+
+    Object.defineProperty(XMLNode.prototype, 'textContent', {
+      get: function() {
+        var child, j, len, ref2, str;
+        if (this.nodeType === NodeType.Element || this.nodeType === NodeType.DocumentFragment) {
+          str = '';
+          ref2 = this.children;
+          for (j = 0, len = ref2.length; j < len; j++) {
+            child = ref2[j];
+            if (child.textContent) {
+              str += child.textContent;
+            }
+          }
+          return str;
+        } else {
+          return null;
+        }
+      },
+      set: function(value) {
+        throw new Error("This DOM method is not implemented." + this.debugInfo());
+      }
+    });
+
+    XMLNode.prototype.setParent = function(parent) {
+      var child, j, len, ref2, results;
+      this.parent = parent;
+      if (parent) {
+        this.options = parent.options;
+        this.stringify = parent.stringify;
+      }
+      ref2 = this.children;
+      results = [];
+      for (j = 0, len = ref2.length; j < len; j++) {
+        child = ref2[j];
+        results.push(child.setParent(this));
+      }
+      return results;
+    };
+
+    XMLNode.prototype.element = function(name, attributes, text) {
+      var childNode, item, j, k, key, lastChild, len, len1, ref2, ref3, val;
+      lastChild = null;
+      if (attributes === null && (text == null)) {
+        ref2 = [{}, null], attributes = ref2[0], text = ref2[1];
+      }
+      if (attributes == null) {
+        attributes = {};
+      }
+      attributes = getValue(attributes);
+      if (!isObject(attributes)) {
+        ref3 = [attributes, text], text = ref3[0], attributes = ref3[1];
+      }
+      if (name != null) {
+        name = getValue(name);
+      }
+      if (Array.isArray(name)) {
+        for (j = 0, len = name.length; j < len; j++) {
+          item = name[j];
+          lastChild = this.element(item);
+        }
+      } else if (isFunction(name)) {
+        lastChild = this.element(name.apply());
+      } else if (isObject(name)) {
+        for (key in name) {
+          if (!hasProp.call(name, key)) continue;
+          val = name[key];
+          if (isFunction(val)) {
+            val = val.apply();
+          }
+          if (!this.options.ignoreDecorators && this.stringify.convertAttKey && key.indexOf(this.stringify.convertAttKey) === 0) {
+            lastChild = this.attribute(key.substr(this.stringify.convertAttKey.length), val);
+          } else if (!this.options.separateArrayItems && Array.isArray(val) && isEmpty(val)) {
+            lastChild = this.dummy();
+          } else if (isObject(val) && isEmpty(val)) {
+            lastChild = this.element(key);
+          } else if (!this.options.keepNullNodes && (val == null)) {
+            lastChild = this.dummy();
+          } else if (!this.options.separateArrayItems && Array.isArray(val)) {
+            for (k = 0, len1 = val.length; k < len1; k++) {
+              item = val[k];
+              childNode = {};
+              childNode[key] = item;
+              lastChild = this.element(childNode);
+            }
+          } else if (isObject(val)) {
+            if (!this.options.ignoreDecorators && this.stringify.convertTextKey && key.indexOf(this.stringify.convertTextKey) === 0) {
+              lastChild = this.element(val);
+            } else {
+              lastChild = this.element(key);
+              lastChild.element(val);
+            }
+          } else {
+            lastChild = this.element(key, val);
+          }
+        }
+      } else if (!this.options.keepNullNodes && text === null) {
+        lastChild = this.dummy();
+      } else {
+        if (!this.options.ignoreDecorators && this.stringify.convertTextKey && name.indexOf(this.stringify.convertTextKey) === 0) {
+          lastChild = this.text(text);
+        } else if (!this.options.ignoreDecorators && this.stringify.convertCDataKey && name.indexOf(this.stringify.convertCDataKey) === 0) {
+          lastChild = this.cdata(text);
+        } else if (!this.options.ignoreDecorators && this.stringify.convertCommentKey && name.indexOf(this.stringify.convertCommentKey) === 0) {
+          lastChild = this.comment(text);
+        } else if (!this.options.ignoreDecorators && this.stringify.convertRawKey && name.indexOf(this.stringify.convertRawKey) === 0) {
+          lastChild = this.raw(text);
+        } else if (!this.options.ignoreDecorators && this.stringify.convertPIKey && name.indexOf(this.stringify.convertPIKey) === 0) {
+          lastChild = this.instruction(name.substr(this.stringify.convertPIKey.length), text);
+        } else {
+          lastChild = this.node(name, attributes, text);
+        }
+      }
+      if (lastChild == null) {
+        throw new Error("Could not create any elements with: " + name + ". " + this.debugInfo());
+      }
+      return lastChild;
+    };
+
+    XMLNode.prototype.insertBefore = function(name, attributes, text) {
+      var child, i, newChild, refChild, removed;
+      if (name != null ? name.type : void 0) {
+        newChild = name;
+        refChild = attributes;
+        newChild.setParent(this);
+        if (refChild) {
+          i = children.indexOf(refChild);
+          removed = children.splice(i);
+          children.push(newChild);
+          Array.prototype.push.apply(children, removed);
+        } else {
+          children.push(newChild);
+        }
+        return newChild;
+      } else {
+        if (this.isRoot) {
+          throw new Error("Cannot insert elements at root level. " + this.debugInfo(name));
+        }
+        i = this.parent.children.indexOf(this);
+        removed = this.parent.children.splice(i);
+        child = this.parent.element(name, attributes, text);
+        Array.prototype.push.apply(this.parent.children, removed);
+        return child;
+      }
+    };
+
+    XMLNode.prototype.insertAfter = function(name, attributes, text) {
+      var child, i, removed;
+      if (this.isRoot) {
+        throw new Error("Cannot insert elements at root level. " + this.debugInfo(name));
+      }
+      i = this.parent.children.indexOf(this);
+      removed = this.parent.children.splice(i + 1);
+      child = this.parent.element(name, attributes, text);
+      Array.prototype.push.apply(this.parent.children, removed);
+      return child;
+    };
+
+    XMLNode.prototype.remove = function() {
+      var i, ref2;
+      if (this.isRoot) {
+        throw new Error("Cannot remove the root element. " + this.debugInfo());
+      }
+      i = this.parent.children.indexOf(this);
+      [].splice.apply(this.parent.children, [i, i - i + 1].concat(ref2 = [])), ref2;
+      return this.parent;
+    };
+
+    XMLNode.prototype.node = function(name, attributes, text) {
+      var child, ref2;
+      if (name != null) {
+        name = getValue(name);
+      }
+      attributes || (attributes = {});
+      attributes = getValue(attributes);
+      if (!isObject(attributes)) {
+        ref2 = [attributes, text], text = ref2[0], attributes = ref2[1];
+      }
+      child = new XMLElement(this, name, attributes);
+      if (text != null) {
+        child.text(text);
+      }
+      this.children.push(child);
+      return child;
+    };
+
+    XMLNode.prototype.text = function(value) {
+      var child;
+      if (isObject(value)) {
+        this.element(value);
+      }
+      child = new XMLText(this, value);
+      this.children.push(child);
+      return this;
+    };
+
+    XMLNode.prototype.cdata = function(value) {
+      var child;
+      child = new XMLCData(this, value);
+      this.children.push(child);
+      return this;
+    };
+
+    XMLNode.prototype.comment = function(value) {
+      var child;
+      child = new XMLComment(this, value);
+      this.children.push(child);
+      return this;
+    };
+
+    XMLNode.prototype.commentBefore = function(value) {
+      var child, i, removed;
+      i = this.parent.children.indexOf(this);
+      removed = this.parent.children.splice(i);
+      child = this.parent.comment(value);
+      Array.prototype.push.apply(this.parent.children, removed);
+      return this;
+    };
+
+    XMLNode.prototype.commentAfter = function(value) {
+      var child, i, removed;
+      i = this.parent.children.indexOf(this);
+      removed = this.parent.children.splice(i + 1);
+      child = this.parent.comment(value);
+      Array.prototype.push.apply(this.parent.children, removed);
+      return this;
+    };
+
+    XMLNode.prototype.raw = function(value) {
+      var child;
+      child = new XMLRaw(this, value);
+      this.children.push(child);
+      return this;
+    };
+
+    XMLNode.prototype.dummy = function() {
+      var child;
+      child = new XMLDummy(this);
+      return child;
+    };
+
+    XMLNode.prototype.instruction = function(target, value) {
+      var insTarget, insValue, instruction, j, len;
+      if (target != null) {
+        target = getValue(target);
+      }
+      if (value != null) {
+        value = getValue(value);
+      }
+      if (Array.isArray(target)) {
+        for (j = 0, len = target.length; j < len; j++) {
+          insTarget = target[j];
+          this.instruction(insTarget);
+        }
+      } else if (isObject(target)) {
+        for (insTarget in target) {
+          if (!hasProp.call(target, insTarget)) continue;
+          insValue = target[insTarget];
+          this.instruction(insTarget, insValue);
+        }
+      } else {
+        if (isFunction(value)) {
+          value = value.apply();
+        }
+        instruction = new XMLProcessingInstruction(this, target, value);
+        this.children.push(instruction);
+      }
+      return this;
+    };
+
+    XMLNode.prototype.instructionBefore = function(target, value) {
+      var child, i, removed;
+      i = this.parent.children.indexOf(this);
+      removed = this.parent.children.splice(i);
+      child = this.parent.instruction(target, value);
+      Array.prototype.push.apply(this.parent.children, removed);
+      return this;
+    };
+
+    XMLNode.prototype.instructionAfter = function(target, value) {
+      var child, i, removed;
+      i = this.parent.children.indexOf(this);
+      removed = this.parent.children.splice(i + 1);
+      child = this.parent.instruction(target, value);
+      Array.prototype.push.apply(this.parent.children, removed);
+      return this;
+    };
+
+    XMLNode.prototype.declaration = function(version, encoding, standalone) {
+      var doc, xmldec;
+      doc = this.document();
+      xmldec = new XMLDeclaration(doc, version, encoding, standalone);
+      if (doc.children.length === 0) {
+        doc.children.unshift(xmldec);
+      } else if (doc.children[0].type === NodeType.Declaration) {
+        doc.children[0] = xmldec;
+      } else {
+        doc.children.unshift(xmldec);
+      }
+      return doc.root() || doc;
+    };
+
+    XMLNode.prototype.dtd = function(pubID, sysID) {
+      var child, doc, doctype, i, j, k, len, len1, ref2, ref3;
+      doc = this.document();
+      doctype = new XMLDocType(doc, pubID, sysID);
+      ref2 = doc.children;
+      for (i = j = 0, len = ref2.length; j < len; i = ++j) {
+        child = ref2[i];
+        if (child.type === NodeType.DocType) {
+          doc.children[i] = doctype;
+          return doctype;
+        }
+      }
+      ref3 = doc.children;
+      for (i = k = 0, len1 = ref3.length; k < len1; i = ++k) {
+        child = ref3[i];
+        if (child.isRoot) {
+          doc.children.splice(i, 0, doctype);
+          return doctype;
+        }
+      }
+      doc.children.push(doctype);
+      return doctype;
+    };
+
+    XMLNode.prototype.up = function() {
+      if (this.isRoot) {
+        throw new Error("The root node has no parent. Use doc() if you need to get the document object.");
+      }
+      return this.parent;
+    };
+
+    XMLNode.prototype.root = function() {
+      var node;
+      node = this;
+      while (node) {
+        if (node.type === NodeType.Document) {
+          return node.rootObject;
+        } else if (node.isRoot) {
+          return node;
+        } else {
+          node = node.parent;
+        }
+      }
+    };
+
+    XMLNode.prototype.document = function() {
+      var node;
+      node = this;
+      while (node) {
+        if (node.type === NodeType.Document) {
+          return node;
+        } else {
+          node = node.parent;
+        }
+      }
+    };
+
+    XMLNode.prototype.end = function(options) {
+      return this.document().end(options);
+    };
+
+    XMLNode.prototype.prev = function() {
+      var i;
+      i = this.parent.children.indexOf(this);
+      if (i < 1) {
+        throw new Error("Already at the first node. " + this.debugInfo());
+      }
+      return this.parent.children[i - 1];
+    };
+
+    XMLNode.prototype.next = function() {
+      var i;
+      i = this.parent.children.indexOf(this);
+      if (i === -1 || i === this.parent.children.length - 1) {
+        throw new Error("Already at the last node. " + this.debugInfo());
+      }
+      return this.parent.children[i + 1];
+    };
+
+    XMLNode.prototype.importDocument = function(doc) {
+      var clonedRoot;
+      clonedRoot = doc.root().clone();
+      clonedRoot.parent = this;
+      clonedRoot.isRoot = false;
+      this.children.push(clonedRoot);
+      return this;
+    };
+
+    XMLNode.prototype.debugInfo = function(name) {
+      var ref2, ref3;
+      name = name || this.name;
+      if ((name == null) && !((ref2 = this.parent) != null ? ref2.name : void 0)) {
+        return "";
+      } else if (name == null) {
+        return "parent: <" + this.parent.name + ">";
+      } else if (!((ref3 = this.parent) != null ? ref3.name : void 0)) {
+        return "node: <" + name + ">";
+      } else {
+        return "node: <" + name + ">, parent: <" + this.parent.name + ">";
+      }
+    };
+
+    XMLNode.prototype.ele = function(name, attributes, text) {
+      return this.element(name, attributes, text);
+    };
+
+    XMLNode.prototype.nod = function(name, attributes, text) {
+      return this.node(name, attributes, text);
+    };
+
+    XMLNode.prototype.txt = function(value) {
+      return this.text(value);
+    };
+
+    XMLNode.prototype.dat = function(value) {
+      return this.cdata(value);
+    };
+
+    XMLNode.prototype.com = function(value) {
+      return this.comment(value);
+    };
+
+    XMLNode.prototype.ins = function(target, value) {
+      return this.instruction(target, value);
+    };
+
+    XMLNode.prototype.doc = function() {
+      return this.document();
+    };
+
+    XMLNode.prototype.dec = function(version, encoding, standalone) {
+      return this.declaration(version, encoding, standalone);
+    };
+
+    XMLNode.prototype.e = function(name, attributes, text) {
+      return this.element(name, attributes, text);
+    };
+
+    XMLNode.prototype.n = function(name, attributes, text) {
+      return this.node(name, attributes, text);
+    };
+
+    XMLNode.prototype.t = function(value) {
+      return this.text(value);
+    };
+
+    XMLNode.prototype.d = function(value) {
+      return this.cdata(value);
+    };
+
+    XMLNode.prototype.c = function(value) {
+      return this.comment(value);
+    };
+
+    XMLNode.prototype.r = function(value) {
+      return this.raw(value);
+    };
+
+    XMLNode.prototype.i = function(target, value) {
+      return this.instruction(target, value);
+    };
+
+    XMLNode.prototype.u = function() {
+      return this.up();
+    };
+
+    XMLNode.prototype.importXMLBuilder = function(doc) {
+      return this.importDocument(doc);
+    };
+
+    XMLNode.prototype.replaceChild = function(newChild, oldChild) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLNode.prototype.removeChild = function(oldChild) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLNode.prototype.appendChild = function(newChild) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLNode.prototype.hasChildNodes = function() {
+      return this.children.length !== 0;
+    };
+
+    XMLNode.prototype.cloneNode = function(deep) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLNode.prototype.normalize = function() {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLNode.prototype.isSupported = function(feature, version) {
+      return true;
+    };
+
+    XMLNode.prototype.hasAttributes = function() {
+      return this.attribs.length !== 0;
+    };
+
+    XMLNode.prototype.compareDocumentPosition = function(other) {
+      var ref, res;
+      ref = this;
+      if (ref === other) {
+        return 0;
+      } else if (this.document() !== other.document()) {
+        res = DocumentPosition.Disconnected | DocumentPosition.ImplementationSpecific;
+        if (Math.random() < 0.5) {
+          res |= DocumentPosition.Preceding;
+        } else {
+          res |= DocumentPosition.Following;
+        }
+        return res;
+      } else if (ref.isAncestor(other)) {
+        return DocumentPosition.Contains | DocumentPosition.Preceding;
+      } else if (ref.isDescendant(other)) {
+        return DocumentPosition.Contains | DocumentPosition.Following;
+      } else if (ref.isPreceding(other)) {
+        return DocumentPosition.Preceding;
+      } else {
+        return DocumentPosition.Following;
+      }
+    };
+
+    XMLNode.prototype.isSameNode = function(other) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLNode.prototype.lookupPrefix = function(namespaceURI) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLNode.prototype.isDefaultNamespace = function(namespaceURI) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLNode.prototype.lookupNamespaceURI = function(prefix) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLNode.prototype.isEqualNode = function(node) {
+      var i, j, ref2;
+      if (node.nodeType !== this.nodeType) {
+        return false;
+      }
+      if (node.children.length !== this.children.length) {
+        return false;
+      }
+      for (i = j = 0, ref2 = this.children.length - 1; 0 <= ref2 ? j <= ref2 : j >= ref2; i = 0 <= ref2 ? ++j : --j) {
+        if (!this.children[i].isEqualNode(node.children[i])) {
+          return false;
+        }
+      }
+      return true;
+    };
+
+    XMLNode.prototype.getFeature = function(feature, version) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLNode.prototype.setUserData = function(key, data, handler) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLNode.prototype.getUserData = function(key) {
+      throw new Error("This DOM method is not implemented." + this.debugInfo());
+    };
+
+    XMLNode.prototype.contains = function(other) {
+      if (!other) {
+        return false;
+      }
+      return other === this || this.isDescendant(other);
+    };
+
+    XMLNode.prototype.isDescendant = function(node) {
+      var child, isDescendantChild, j, len, ref2;
+      ref2 = this.children;
+      for (j = 0, len = ref2.length; j < len; j++) {
+        child = ref2[j];
+        if (node === child) {
+          return true;
+        }
+        isDescendantChild = child.isDescendant(node);
+        if (isDescendantChild) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    XMLNode.prototype.isAncestor = function(node) {
+      return node.isDescendant(this);
+    };
+
+    XMLNode.prototype.isPreceding = function(node) {
+      var nodePos, thisPos;
+      nodePos = this.treePosition(node);
+      thisPos = this.treePosition(this);
+      if (nodePos === -1 || thisPos === -1) {
+        return false;
+      } else {
+        return nodePos < thisPos;
+      }
+    };
+
+    XMLNode.prototype.isFollowing = function(node) {
+      var nodePos, thisPos;
+      nodePos = this.treePosition(node);
+      thisPos = this.treePosition(this);
+      if (nodePos === -1 || thisPos === -1) {
+        return false;
+      } else {
+        return nodePos > thisPos;
+      }
+    };
+
+    XMLNode.prototype.treePosition = function(node) {
+      var found, pos;
+      pos = 0;
+      found = false;
+      this.foreachTreeNode(this.document(), function(childNode) {
+        pos++;
+        if (!found && childNode === node) {
+          return found = true;
+        }
+      });
+      if (found) {
+        return pos;
+      } else {
+        return -1;
+      }
+    };
+
+    XMLNode.prototype.foreachTreeNode = function(node, func) {
+      var child, j, len, ref2, res;
+      node || (node = this.document());
+      ref2 = node.children;
+      for (j = 0, len = ref2.length; j < len; j++) {
+        child = ref2[j];
+        if (res = func(child)) {
+          return res;
+        } else {
+          res = this.foreachTreeNode(child, func);
+          if (res) {
+            return res;
+          }
+        }
+      }
+    };
+
+    return XMLNode;
+
+  })();
+
+}).call(this);
+
+
+/***/ }),
 /* 258 */,
 /* 259 */,
 /* 260 */
@@ -5294,9 +6695,9 @@ const SIGRTMAX=64;exports.SIGRTMAX=SIGRTMAX;
 Object.defineProperty(exports, '__esModule', { value: true });
 
 var api = __webpack_require__(440);
-var tslib = __webpack_require__(422);
+var tslib = __webpack_require__(144);
 
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 /**
  * A no-op implementation of Span that can safely be used without side-effects.
  */
@@ -5367,7 +6768,7 @@ var NoOpSpan = /** @class */ (function () {
     return NoOpSpan;
 }());
 
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 /**
  * A no-op implementation of Tracer that can be used when tracing
  * is disabled.
@@ -5408,13 +6809,13 @@ var NoOpTracer = /** @class */ (function () {
     return NoOpTracer;
 }());
 
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
 function getGlobalObject() {
     return global;
 }
 
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // V1 = OpenTelemetry 0.1
 // V2 = OpenTelemetry 0.2
 // V3 = OpenTelemetry 0.6.1
@@ -5455,7 +6856,7 @@ function getCache() {
     return cache;
 }
 
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 var defaultTracer;
 function getDefaultTracer() {
     if (!defaultTracer) {
@@ -5483,8 +6884,8 @@ function getTracer() {
     return cache.tracer;
 }
 
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
 /**
  * @ignore
  * @internal
@@ -5508,6 +6909,7 @@ var OpenCensusTraceStateWrapper = /** @class */ (function () {
     return OpenCensusTraceStateWrapper;
 }());
 
+// Copyright (c) Microsoft Corporation.
 function isWrappedSpan(span) {
     return !!span && span.getWrappedSpan !== undefined;
 }
@@ -5617,6 +7019,7 @@ var OpenCensusSpanWrapper = /** @class */ (function () {
     return OpenCensusSpanWrapper;
 }());
 
+// Copyright (c) Microsoft Corporation.
 /**
  * An implementation of OpenTelemetry Tracer that wraps an OpenCensus Tracer.
  */
@@ -5667,6 +7070,7 @@ var OpenCensusTracerWrapper = /** @class */ (function () {
     return OpenCensusTracerWrapper;
 }());
 
+// Copyright (c) Microsoft Corporation.
 /**
  * A mock span useful for testing.
  */
@@ -5754,6 +7158,7 @@ var TestSpan = /** @class */ (function (_super) {
     return TestSpan;
 }(NoOpSpan));
 
+// Copyright (c) Microsoft Corporation.
 /**
  * A mock tracer useful for testing
  */
@@ -5874,8 +7279,8 @@ var TestTracer = /** @class */ (function (_super) {
     return TestTracer;
 }(NoOpTracer));
 
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
 var VERSION = "00";
 /**
  * Generates a `SpanContext` given a `traceparent` header value.
@@ -5981,9 +7386,55 @@ exports.setTracer = setTracer;
 /* 273 */,
 /* 274 */,
 /* 275 */,
-/* 276 */,
+/* 276 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+/*
+ * Copyright The OpenTelemetry Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+//# sourceMappingURL=Logger.js.map
+
+/***/ }),
 /* 277 */,
-/* 278 */,
+/* 278 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+/*
+ * Copyright The OpenTelemetry Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+//# sourceMappingURL=CorrelationContext.js.map
+
+/***/ }),
 /* 279 */,
 /* 280 */,
 /* 281 */
@@ -6656,7 +8107,30 @@ const signalsByNumber=getSignalsByNumber();exports.signalsByNumber=signalsByNumb
 /* 315 */,
 /* 316 */,
 /* 317 */,
-/* 318 */,
+/* 318 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+/*
+ * Copyright The OpenTelemetry Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+//# sourceMappingURL=BatchObserverResult.js.map
+
+/***/ }),
 /* 319 */,
 /* 320 */,
 /* 321 */,
@@ -6762,7 +8236,7 @@ var MatchKind;
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-const { fromCallback } = __webpack_require__(676);
+const { fromCallback } = __webpack_require__(147);
 const Store = __webpack_require__(338).Store;
 const permuteDomain = __webpack_require__(89).permuteDomain;
 const pathMatch = __webpack_require__(348).pathMatch;
@@ -7024,7 +8498,53 @@ exports.Store = Store;
 
 /***/ }),
 /* 339 */,
-/* 340 */,
+/* 340 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+/*
+ * Copyright The OpenTelemetry Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SamplingDecision = void 0;
+/**
+ * A sampling decision that determines how a {@link Span} will be recorded
+ * and collected.
+ */
+var SamplingDecision;
+(function (SamplingDecision) {
+    /**
+     * `Span.isRecording() === false`, span will not be recorded and all events
+     * and attributes will be dropped.
+     */
+    SamplingDecision[SamplingDecision["NOT_RECORD"] = 0] = "NOT_RECORD";
+    /**
+     * `Span.isRecording() === true`, but `Sampled` flag in {@link TraceFlags}
+     * MUST NOT be set.
+     */
+    SamplingDecision[SamplingDecision["RECORD"] = 1] = "RECORD";
+    /**
+     * `Span.isRecording() === true` AND `Sampled` flag in {@link TraceFlags}
+     * MUST be set.
+     */
+    SamplingDecision[SamplingDecision["RECORD_AND_SAMPLED"] = 2] = "RECORD_AND_SAMPLED";
+})(SamplingDecision = exports.SamplingDecision || (exports.SamplingDecision = {}));
+//# sourceMappingURL=SamplingResult.js.map
+
+/***/ }),
 /* 341 */,
 /* 342 */,
 /* 343 */
@@ -7222,19 +8742,19 @@ module.exports = require("assert");
 Object.defineProperty(exports, '__esModule', { value: true });
 
 var coreHttp = __webpack_require__(999);
-var tslib = __webpack_require__(422);
+var tslib = __webpack_require__(815);
 var api = __webpack_require__(440);
 var logger$1 = __webpack_require__(492);
 var abortController = __webpack_require__(106);
 var os = __webpack_require__(87);
 var stream = __webpack_require__(794);
-var fs = __webpack_require__(747);
-var util = __webpack_require__(669);
+__webpack_require__(242);
 var crypto = __webpack_require__(417);
+var coreLro = __webpack_require__(889);
 var events = __webpack_require__(614);
 var coreTracing = __webpack_require__(263);
-var coreLro = __webpack_require__(889);
-__webpack_require__(242);
+var fs = __webpack_require__(747);
+var util = __webpack_require__(669);
 
 /*
  * Copyright (c) Microsoft Corporation. All rights reserved.
@@ -7378,7 +8898,7 @@ var DataLakeStorageError = {
         name: "Composite",
         className: "DataLakeStorageError",
         modelProperties: {
-            error: {
+            dataLakeStorageErrorDetails: {
                 xmlName: "error",
                 serializedName: "error",
                 type: {
@@ -7419,12 +8939,12 @@ var AccessPolicy = {
         }
     }
 };
-var BlobProperties = {
+var BlobPropertiesInternal = {
     xmlName: "Properties",
-    serializedName: "BlobProperties",
+    serializedName: "BlobPropertiesInternal",
     type: {
         name: "Composite",
-        className: "BlobProperties",
+        className: "BlobPropertiesInternal",
         modelProperties: {
             createdOn: {
                 xmlName: "Creation-Time",
@@ -7677,16 +9197,96 @@ var BlobProperties = {
                 type: {
                     name: "DateTimeRfc1123"
                 }
+            },
+            tagCount: {
+                xmlName: "TagCount",
+                serializedName: "TagCount",
+                type: {
+                    name: "Number"
+                }
+            },
+            expiresOn: {
+                xmlName: "Expiry-Time",
+                serializedName: "Expiry-Time",
+                type: {
+                    name: "DateTimeRfc1123"
+                }
+            },
+            isSealed: {
+                xmlName: "Sealed",
+                serializedName: "Sealed",
+                type: {
+                    name: "Boolean"
+                }
+            },
+            rehydratePriority: {
+                xmlName: "RehydratePriority",
+                serializedName: "RehydratePriority",
+                type: {
+                    name: "String"
+                }
             }
         }
     }
 };
-var BlobItem = {
-    xmlName: "Blob",
-    serializedName: "BlobItem",
+var BlobTag = {
+    xmlName: "Tag",
+    serializedName: "BlobTag",
     type: {
         name: "Composite",
-        className: "BlobItem",
+        className: "BlobTag",
+        modelProperties: {
+            key: {
+                xmlName: "Key",
+                required: true,
+                serializedName: "Key",
+                type: {
+                    name: "String"
+                }
+            },
+            value: {
+                xmlName: "Value",
+                required: true,
+                serializedName: "Value",
+                type: {
+                    name: "String"
+                }
+            }
+        }
+    }
+};
+var BlobTags = {
+    xmlName: "Tags",
+    serializedName: "BlobTags",
+    type: {
+        name: "Composite",
+        className: "BlobTags",
+        modelProperties: {
+            blobTagSet: {
+                xmlIsWrapped: true,
+                xmlName: "TagSet",
+                xmlElementName: "Tag",
+                required: true,
+                serializedName: "BlobTagSet",
+                type: {
+                    name: "Sequence",
+                    element: {
+                        type: {
+                            name: "Composite",
+                            className: "BlobTag"
+                        }
+                    }
+                }
+            }
+        }
+    }
+};
+var BlobItemInternal = {
+    xmlName: "Blob",
+    serializedName: "BlobItemInternal",
+    type: {
+        name: "Composite",
+        className: "BlobItemInternal",
         modelProperties: {
             name: {
                 xmlName: "Name",
@@ -7712,18 +9312,52 @@ var BlobItem = {
                     name: "String"
                 }
             },
+            versionId: {
+                xmlName: "VersionId",
+                serializedName: "VersionId",
+                type: {
+                    name: "String"
+                }
+            },
+            isCurrentVersion: {
+                xmlName: "IsCurrentVersion",
+                serializedName: "IsCurrentVersion",
+                type: {
+                    name: "Boolean"
+                }
+            },
             properties: {
                 xmlName: "Properties",
                 required: true,
                 serializedName: "Properties",
                 type: {
                     name: "Composite",
-                    className: "BlobProperties"
+                    className: "BlobPropertiesInternal"
                 }
             },
             metadata: {
                 xmlName: "Metadata",
                 serializedName: "Metadata",
+                type: {
+                    name: "Dictionary",
+                    value: {
+                        type: {
+                            name: "String"
+                        }
+                    }
+                }
+            },
+            blobTags: {
+                xmlName: "Tags",
+                serializedName: "BlobTags",
+                type: {
+                    name: "Composite",
+                    className: "BlobTags"
+                }
+            },
+            objectReplicationMetadata: {
+                xmlName: "OrMetadata",
+                serializedName: "ObjectReplicationMetadata",
                 type: {
                     name: "Dictionary",
                     value: {
@@ -7753,7 +9387,7 @@ var BlobFlatListSegment = {
                     element: {
                         type: {
                             name: "Composite",
-                            className: "BlobItem"
+                            className: "BlobItemInternal"
                         }
                     }
                 }
@@ -7874,7 +9508,7 @@ var BlobHierarchyListSegment = {
                     element: {
                         type: {
                             name: "Composite",
-                            className: "BlobItem"
+                            className: "BlobItemInternal"
                         }
                     }
                 }
@@ -8159,6 +9793,20 @@ var ContainerProperties = {
                 type: {
                     name: "Boolean"
                 }
+            },
+            deletedOn: {
+                xmlName: "DeletedTime",
+                serializedName: "DeletedTime",
+                type: {
+                    name: "DateTimeRfc1123"
+                }
+            },
+            remainingRetentionDays: {
+                xmlName: "RemainingRetentionDays",
+                serializedName: "RemainingRetentionDays",
+                type: {
+                    name: "Number"
+                }
             }
         }
     }
@@ -8174,6 +9822,20 @@ var ContainerItem = {
                 xmlName: "Name",
                 required: true,
                 serializedName: "Name",
+                type: {
+                    name: "String"
+                }
+            },
+            deleted: {
+                xmlName: "Deleted",
+                serializedName: "Deleted",
+                type: {
+                    name: "Boolean"
+                }
+            },
+            version: {
+                xmlName: "Version",
+                serializedName: "Version",
                 type: {
                     name: "String"
                 }
@@ -8197,6 +9859,72 @@ var ContainerItem = {
                             name: "String"
                         }
                     }
+                }
+            }
+        }
+    }
+};
+var DelimitedTextConfiguration = {
+    serializedName: "DelimitedTextConfiguration",
+    type: {
+        name: "Composite",
+        className: "DelimitedTextConfiguration",
+        modelProperties: {
+            columnSeparator: {
+                xmlName: "ColumnSeparator",
+                required: true,
+                serializedName: "ColumnSeparator",
+                type: {
+                    name: "String"
+                }
+            },
+            fieldQuote: {
+                xmlName: "FieldQuote",
+                required: true,
+                serializedName: "FieldQuote",
+                type: {
+                    name: "String"
+                }
+            },
+            recordSeparator: {
+                xmlName: "RecordSeparator",
+                required: true,
+                serializedName: "RecordSeparator",
+                type: {
+                    name: "String"
+                }
+            },
+            escapeChar: {
+                xmlName: "EscapeChar",
+                required: true,
+                serializedName: "EscapeChar",
+                type: {
+                    name: "String"
+                }
+            },
+            headersPresent: {
+                xmlName: "HasHeaders",
+                required: true,
+                serializedName: "HeadersPresent",
+                type: {
+                    name: "Boolean"
+                }
+            }
+        }
+    }
+};
+var JsonTextConfiguration = {
+    serializedName: "JsonTextConfiguration",
+    type: {
+        name: "Composite",
+        className: "JsonTextConfiguration",
+        modelProperties: {
+            recordSeparator: {
+                xmlName: "RecordSeparator",
+                required: true,
+                serializedName: "RecordSeparator",
+                type: {
+                    name: "String"
                 }
             }
         }
@@ -8312,6 +10040,90 @@ var CorsRule = {
                 },
                 type: {
                     name: "Number"
+                }
+            }
+        }
+    }
+};
+var FilterBlobItem = {
+    xmlName: "Blob",
+    serializedName: "FilterBlobItem",
+    type: {
+        name: "Composite",
+        className: "FilterBlobItem",
+        modelProperties: {
+            name: {
+                xmlName: "Name",
+                required: true,
+                serializedName: "Name",
+                type: {
+                    name: "String"
+                }
+            },
+            containerName: {
+                xmlName: "ContainerName",
+                required: true,
+                serializedName: "ContainerName",
+                type: {
+                    name: "String"
+                }
+            },
+            tagValue: {
+                xmlName: "TagValue",
+                required: true,
+                serializedName: "TagValue",
+                type: {
+                    name: "String"
+                }
+            }
+        }
+    }
+};
+var FilterBlobSegment = {
+    xmlName: "EnumerationResults",
+    serializedName: "FilterBlobSegment",
+    type: {
+        name: "Composite",
+        className: "FilterBlobSegment",
+        modelProperties: {
+            serviceEndpoint: {
+                xmlIsAttribute: true,
+                xmlName: "ServiceEndpoint",
+                required: true,
+                serializedName: "ServiceEndpoint",
+                type: {
+                    name: "String"
+                }
+            },
+            where: {
+                xmlName: "Where",
+                required: true,
+                serializedName: "Where",
+                type: {
+                    name: "String"
+                }
+            },
+            blobs: {
+                xmlIsWrapped: true,
+                xmlName: "Blobs",
+                xmlElementName: "Blob",
+                required: true,
+                serializedName: "Blobs",
+                type: {
+                    name: "Sequence",
+                    element: {
+                        type: {
+                            name: "Composite",
+                            className: "FilterBlobItem"
+                        }
+                    }
+                }
+            },
+            continuationToken: {
+                xmlName: "NextMarker",
+                serializedName: "NextMarker",
+                type: {
+                    name: "String"
                 }
             }
         }
@@ -8545,6 +10357,103 @@ var PageList = {
         }
     }
 };
+var QueryFormat = {
+    serializedName: "QueryFormat",
+    type: {
+        name: "Composite",
+        className: "QueryFormat",
+        modelProperties: {
+            type: {
+                xmlName: "Type",
+                serializedName: "Type",
+                type: {
+                    name: "Enum",
+                    allowedValues: [
+                        "delimited",
+                        "json"
+                    ]
+                }
+            },
+            delimitedTextConfiguration: {
+                xmlName: "DelimitedTextConfiguration",
+                serializedName: "DelimitedTextConfiguration",
+                type: {
+                    name: "Composite",
+                    className: "DelimitedTextConfiguration"
+                }
+            },
+            jsonTextConfiguration: {
+                xmlName: "JsonTextConfiguration",
+                serializedName: "JsonTextConfiguration",
+                type: {
+                    name: "Composite",
+                    className: "JsonTextConfiguration"
+                }
+            }
+        }
+    }
+};
+var QuerySerialization = {
+    serializedName: "QuerySerialization",
+    type: {
+        name: "Composite",
+        className: "QuerySerialization",
+        modelProperties: {
+            format: {
+                xmlName: "Format",
+                required: true,
+                serializedName: "Format",
+                type: {
+                    name: "Composite",
+                    className: "QueryFormat"
+                }
+            }
+        }
+    }
+};
+var QueryRequest = {
+    serializedName: "QueryRequest",
+    type: {
+        name: "Composite",
+        className: "QueryRequest",
+        modelProperties: {
+            queryType: {
+                xmlName: "QueryType",
+                required: true,
+                isConstant: true,
+                serializedName: "QueryType",
+                defaultValue: 'SQL',
+                type: {
+                    name: "String"
+                }
+            },
+            expression: {
+                xmlName: "Expression",
+                required: true,
+                serializedName: "Expression",
+                type: {
+                    name: "String"
+                }
+            },
+            inputSerialization: {
+                xmlName: "InputSerialization",
+                serializedName: "InputSerialization",
+                type: {
+                    name: "Composite",
+                    className: "QuerySerialization"
+                }
+            },
+            outputSerialization: {
+                xmlName: "OutputSerialization",
+                serializedName: "OutputSerialization",
+                type: {
+                    name: "Composite",
+                    className: "QuerySerialization"
+                }
+            }
+        }
+    }
+};
 var SignedIdentifier = {
     serializedName: "SignedIdentifier",
     type: {
@@ -8595,6 +10504,13 @@ var StaticWebsite = {
             errorDocument404Path: {
                 xmlName: "ErrorDocument404Path",
                 serializedName: "ErrorDocument404Path",
+                type: {
+                    name: "String"
+                }
+            },
+            defaultIndexDocumentPath: {
+                xmlName: "DefaultIndexDocumentPath",
+                serializedName: "DefaultIndexDocumentPath",
                 type: {
                     name: "String"
                 }
@@ -8919,7 +10835,9 @@ var ServiceGetAccountInfoHeaders = {
                     allowedValues: [
                         "Storage",
                         "BlobStorage",
-                        "StorageV2"
+                        "StorageV2",
+                        "FileStorage",
+                        "BlockBlobStorage"
                     ]
                 }
             },
@@ -8960,6 +10878,45 @@ var ServiceSubmitBatchHeaders = {
                 serializedName: "x-ms-client-request-id",
                 type: {
                     name: "String"
+                }
+            },
+            errorCode: {
+                serializedName: "x-ms-error-code",
+                type: {
+                    name: "String"
+                }
+            }
+        }
+    }
+};
+var ServiceFilterBlobsHeaders = {
+    serializedName: "service-filterblobs-headers",
+    type: {
+        name: "Composite",
+        className: "ServiceFilterBlobsHeaders",
+        modelProperties: {
+            clientRequestId: {
+                serializedName: "x-ms-client-request-id",
+                type: {
+                    name: "String"
+                }
+            },
+            requestId: {
+                serializedName: "x-ms-request-id",
+                type: {
+                    name: "String"
+                }
+            },
+            version: {
+                serializedName: "x-ms-version",
+                type: {
+                    name: "String"
+                }
+            },
+            date: {
+                serializedName: "date",
+                type: {
+                    name: "DateTimeRfc1123"
                 }
             },
             errorCode: {
@@ -9313,6 +11270,45 @@ var ContainerSetAccessPolicyHeaders = {
                     name: "DateTimeRfc1123"
                 }
             },
+            clientRequestId: {
+                serializedName: "x-ms-client-request-id",
+                type: {
+                    name: "String"
+                }
+            },
+            requestId: {
+                serializedName: "x-ms-request-id",
+                type: {
+                    name: "String"
+                }
+            },
+            version: {
+                serializedName: "x-ms-version",
+                type: {
+                    name: "String"
+                }
+            },
+            date: {
+                serializedName: "date",
+                type: {
+                    name: "DateTimeRfc1123"
+                }
+            },
+            errorCode: {
+                serializedName: "x-ms-error-code",
+                type: {
+                    name: "String"
+                }
+            }
+        }
+    }
+};
+var ContainerRestoreHeaders = {
+    serializedName: "container-restore-headers",
+    type: {
+        name: "Composite",
+        className: "ContainerRestoreHeaders",
+        modelProperties: {
             clientRequestId: {
                 serializedName: "x-ms-client-request-id",
                 type: {
@@ -9765,7 +11761,9 @@ var ContainerGetAccountInfoHeaders = {
                     allowedValues: [
                         "Storage",
                         "BlobStorage",
-                        "StorageV2"
+                        "StorageV2",
+                        "FileStorage",
+                        "BlockBlobStorage"
                     ]
                 }
             },
@@ -9801,6 +11799,24 @@ var BlobDownloadHeaders = {
                     }
                 },
                 headerCollectionPrefix: "x-ms-meta-"
+            },
+            objectReplicationPolicyId: {
+                serializedName: "x-ms-or-policy-id",
+                type: {
+                    name: "String"
+                }
+            },
+            objectReplicationRules: {
+                serializedName: "x-ms-or",
+                type: {
+                    name: "Dictionary",
+                    value: {
+                        type: {
+                            name: "String"
+                        }
+                    }
+                },
+                headerCollectionPrefix: "x-ms-or-"
             },
             contentLength: {
                 serializedName: "content-length",
@@ -9966,6 +11982,12 @@ var BlobDownloadHeaders = {
                     name: "String"
                 }
             },
+            versionId: {
+                serializedName: "x-ms-version-id",
+                type: {
+                    name: "String"
+                }
+            },
             acceptRanges: {
                 serializedName: "accept-ranges",
                 type: {
@@ -10006,6 +12028,18 @@ var BlobDownloadHeaders = {
                 serializedName: "x-ms-blob-content-md5",
                 type: {
                     name: "ByteArray"
+                }
+            },
+            tagCount: {
+                serializedName: "x-ms-tag-count",
+                type: {
+                    name: "Number"
+                }
+            },
+            isSealed: {
+                serializedName: "x-ms-blob-sealed",
+                type: {
+                    name: "Boolean"
                 }
             },
             contentCrc64: {
@@ -10052,6 +12086,24 @@ var BlobGetPropertiesHeaders = {
                     }
                 },
                 headerCollectionPrefix: "x-ms-meta-"
+            },
+            objectReplicationPolicyId: {
+                serializedName: "x-ms-or-policy-id",
+                type: {
+                    name: "String"
+                }
+            },
+            objectReplicationRules: {
+                serializedName: "x-ms-or",
+                type: {
+                    name: "Dictionary",
+                    value: {
+                        type: {
+                            name: "String"
+                        }
+                    }
+                },
+                headerCollectionPrefix: "x-ms-or-"
             },
             blobType: {
                 serializedName: "x-ms-blob-type",
@@ -10281,6 +12333,42 @@ var BlobGetPropertiesHeaders = {
                 serializedName: "x-ms-access-tier-change-time",
                 type: {
                     name: "DateTimeRfc1123"
+                }
+            },
+            versionId: {
+                serializedName: "x-ms-version-id",
+                type: {
+                    name: "String"
+                }
+            },
+            isCurrentVersion: {
+                serializedName: "x-ms-is-current-version",
+                type: {
+                    name: "Boolean"
+                }
+            },
+            tagCount: {
+                serializedName: "x-ms-tag-count",
+                type: {
+                    name: "Number"
+                }
+            },
+            expiresOn: {
+                serializedName: "x-ms-expiry-time",
+                type: {
+                    name: "DateTimeRfc1123"
+                }
+            },
+            isSealed: {
+                serializedName: "x-ms-blob-sealed",
+                type: {
+                    name: "Boolean"
+                }
+            },
+            rehydratePriority: {
+                serializedName: "x-ms-rehydrate-priority",
+                type: {
+                    name: "String"
                 }
             },
             errorCode: {
@@ -10538,6 +12626,12 @@ var PageBlobCreateHeaders = {
                     name: "String"
                 }
             },
+            versionId: {
+                serializedName: "x-ms-version-id",
+                type: {
+                    name: "String"
+                }
+            },
             date: {
                 serializedName: "date",
                 type: {
@@ -10609,6 +12703,12 @@ var AppendBlobCreateHeaders = {
             },
             version: {
                 serializedName: "x-ms-version",
+                type: {
+                    name: "String"
+                }
+            },
+            versionId: {
+                serializedName: "x-ms-version-id",
                 type: {
                     name: "String"
                 }
@@ -10688,6 +12788,12 @@ var BlockBlobUploadHeaders = {
                     name: "String"
                 }
             },
+            versionId: {
+                serializedName: "x-ms-version-id",
+                type: {
+                    name: "String"
+                }
+            },
             date: {
                 serializedName: "date",
                 type: {
@@ -10727,6 +12833,57 @@ var BlobUndeleteHeaders = {
         name: "Composite",
         className: "BlobUndeleteHeaders",
         modelProperties: {
+            clientRequestId: {
+                serializedName: "x-ms-client-request-id",
+                type: {
+                    name: "String"
+                }
+            },
+            requestId: {
+                serializedName: "x-ms-request-id",
+                type: {
+                    name: "String"
+                }
+            },
+            version: {
+                serializedName: "x-ms-version",
+                type: {
+                    name: "String"
+                }
+            },
+            date: {
+                serializedName: "date",
+                type: {
+                    name: "DateTimeRfc1123"
+                }
+            },
+            errorCode: {
+                serializedName: "x-ms-error-code",
+                type: {
+                    name: "String"
+                }
+            }
+        }
+    }
+};
+var BlobSetExpiryHeaders = {
+    serializedName: "blob-setexpiry-headers",
+    type: {
+        name: "Composite",
+        className: "BlobSetExpiryHeaders",
+        modelProperties: {
+            etag: {
+                serializedName: "etag",
+                type: {
+                    name: "String"
+                }
+            },
+            lastModified: {
+                serializedName: "last-modified",
+                type: {
+                    name: "DateTimeRfc1123"
+                }
+            },
             clientRequestId: {
                 serializedName: "x-ms-client-request-id",
                 type: {
@@ -10849,6 +13006,12 @@ var BlobSetMetadataHeaders = {
             },
             version: {
                 serializedName: "x-ms-version",
+                type: {
+                    name: "String"
+                }
+            },
+            versionId: {
+                serializedName: "x-ms-version-id",
                 type: {
                     name: "String"
                 }
@@ -11207,6 +13370,12 @@ var BlobCreateSnapshotHeaders = {
                     name: "String"
                 }
             },
+            versionId: {
+                serializedName: "x-ms-version-id",
+                type: {
+                    name: "String"
+                }
+            },
             date: {
                 serializedName: "date",
                 type: {
@@ -11260,6 +13429,12 @@ var BlobStartCopyFromURLHeaders = {
             },
             version: {
                 serializedName: "x-ms-version",
+                type: {
+                    name: "String"
+                }
+            },
+            versionId: {
+                serializedName: "x-ms-version-id",
                 type: {
                     name: "String"
                 }
@@ -11329,6 +13504,12 @@ var BlobCopyFromURLHeaders = {
             },
             version: {
                 serializedName: "x-ms-version",
+                type: {
+                    name: "String"
+                }
+            },
+            versionId: {
+                serializedName: "x-ms-version-id",
                 type: {
                     name: "String"
                 }
@@ -11497,7 +13678,9 @@ var BlobGetAccountInfoHeaders = {
                     allowedValues: [
                         "Storage",
                         "BlobStorage",
-                        "StorageV2"
+                        "StorageV2",
+                        "FileStorage",
+                        "BlockBlobStorage"
                     ]
                 }
             },
@@ -11692,6 +13875,12 @@ var BlockBlobCommitBlockListHeaders = {
             },
             version: {
                 serializedName: "x-ms-version",
+                type: {
+                    name: "String"
+                }
+            },
+            versionId: {
+                serializedName: "x-ms-version-id",
                 type: {
                     name: "String"
                 }
@@ -12506,6 +14695,386 @@ var AppendBlobAppendBlockFromUrlHeaders = {
         }
     }
 };
+var AppendBlobSealHeaders = {
+    serializedName: "appendblob-seal-headers",
+    type: {
+        name: "Composite",
+        className: "AppendBlobSealHeaders",
+        modelProperties: {
+            etag: {
+                serializedName: "etag",
+                type: {
+                    name: "String"
+                }
+            },
+            lastModified: {
+                serializedName: "last-modified",
+                type: {
+                    name: "DateTimeRfc1123"
+                }
+            },
+            clientRequestId: {
+                serializedName: "x-ms-client-request-id",
+                type: {
+                    name: "String"
+                }
+            },
+            requestId: {
+                serializedName: "x-ms-request-id",
+                type: {
+                    name: "String"
+                }
+            },
+            version: {
+                serializedName: "x-ms-version",
+                type: {
+                    name: "String"
+                }
+            },
+            date: {
+                serializedName: "date",
+                type: {
+                    name: "DateTimeRfc1123"
+                }
+            },
+            isSealed: {
+                serializedName: "x-ms-blob-sealed",
+                type: {
+                    name: "Boolean"
+                }
+            },
+            errorCode: {
+                serializedName: "x-ms-error-code",
+                type: {
+                    name: "String"
+                }
+            }
+        }
+    }
+};
+var BlobQueryHeaders = {
+    serializedName: "blob-query-headers",
+    type: {
+        name: "Composite",
+        className: "BlobQueryHeaders",
+        modelProperties: {
+            lastModified: {
+                serializedName: "last-modified",
+                type: {
+                    name: "DateTimeRfc1123"
+                }
+            },
+            metadata: {
+                serializedName: "x-ms-meta",
+                type: {
+                    name: "Dictionary",
+                    value: {
+                        type: {
+                            name: "String"
+                        }
+                    }
+                },
+                headerCollectionPrefix: "x-ms-meta-"
+            },
+            contentLength: {
+                serializedName: "content-length",
+                type: {
+                    name: "Number"
+                }
+            },
+            contentType: {
+                serializedName: "content-type",
+                type: {
+                    name: "String"
+                }
+            },
+            contentRange: {
+                serializedName: "content-range",
+                type: {
+                    name: "String"
+                }
+            },
+            etag: {
+                serializedName: "etag",
+                type: {
+                    name: "String"
+                }
+            },
+            contentMD5: {
+                serializedName: "content-md5",
+                type: {
+                    name: "ByteArray"
+                }
+            },
+            contentEncoding: {
+                serializedName: "content-encoding",
+                type: {
+                    name: "String"
+                }
+            },
+            cacheControl: {
+                serializedName: "cache-control",
+                type: {
+                    name: "String"
+                }
+            },
+            contentDisposition: {
+                serializedName: "content-disposition",
+                type: {
+                    name: "String"
+                }
+            },
+            contentLanguage: {
+                serializedName: "content-language",
+                type: {
+                    name: "String"
+                }
+            },
+            blobSequenceNumber: {
+                serializedName: "x-ms-blob-sequence-number",
+                type: {
+                    name: "Number"
+                }
+            },
+            blobType: {
+                serializedName: "x-ms-blob-type",
+                type: {
+                    name: "Enum",
+                    allowedValues: [
+                        "BlockBlob",
+                        "PageBlob",
+                        "AppendBlob"
+                    ]
+                }
+            },
+            copyCompletionTime: {
+                serializedName: "x-ms-copy-completion-time",
+                type: {
+                    name: "DateTimeRfc1123"
+                }
+            },
+            copyStatusDescription: {
+                serializedName: "x-ms-copy-status-description",
+                type: {
+                    name: "String"
+                }
+            },
+            copyId: {
+                serializedName: "x-ms-copy-id",
+                type: {
+                    name: "String"
+                }
+            },
+            copyProgress: {
+                serializedName: "x-ms-copy-progress",
+                type: {
+                    name: "String"
+                }
+            },
+            copySource: {
+                serializedName: "x-ms-copy-source",
+                type: {
+                    name: "String"
+                }
+            },
+            copyStatus: {
+                serializedName: "x-ms-copy-status",
+                type: {
+                    name: "Enum",
+                    allowedValues: [
+                        "pending",
+                        "success",
+                        "aborted",
+                        "failed"
+                    ]
+                }
+            },
+            leaseDuration: {
+                serializedName: "x-ms-lease-duration",
+                type: {
+                    name: "Enum",
+                    allowedValues: [
+                        "infinite",
+                        "fixed"
+                    ]
+                }
+            },
+            leaseState: {
+                serializedName: "x-ms-lease-state",
+                type: {
+                    name: "Enum",
+                    allowedValues: [
+                        "available",
+                        "leased",
+                        "expired",
+                        "breaking",
+                        "broken"
+                    ]
+                }
+            },
+            leaseStatus: {
+                serializedName: "x-ms-lease-status",
+                type: {
+                    name: "Enum",
+                    allowedValues: [
+                        "locked",
+                        "unlocked"
+                    ]
+                }
+            },
+            clientRequestId: {
+                serializedName: "x-ms-client-request-id",
+                type: {
+                    name: "String"
+                }
+            },
+            requestId: {
+                serializedName: "x-ms-request-id",
+                type: {
+                    name: "String"
+                }
+            },
+            version: {
+                serializedName: "x-ms-version",
+                type: {
+                    name: "String"
+                }
+            },
+            acceptRanges: {
+                serializedName: "accept-ranges",
+                type: {
+                    name: "String"
+                }
+            },
+            date: {
+                serializedName: "date",
+                type: {
+                    name: "DateTimeRfc1123"
+                }
+            },
+            blobCommittedBlockCount: {
+                serializedName: "x-ms-blob-committed-block-count",
+                type: {
+                    name: "Number"
+                }
+            },
+            isServerEncrypted: {
+                serializedName: "x-ms-server-encrypted",
+                type: {
+                    name: "Boolean"
+                }
+            },
+            encryptionKeySha256: {
+                serializedName: "x-ms-encryption-key-sha256",
+                type: {
+                    name: "String"
+                }
+            },
+            encryptionScope: {
+                serializedName: "x-ms-encryption-scope",
+                type: {
+                    name: "String"
+                }
+            },
+            blobContentMD5: {
+                serializedName: "x-ms-blob-content-md5",
+                type: {
+                    name: "ByteArray"
+                }
+            },
+            contentCrc64: {
+                serializedName: "x-ms-content-crc64",
+                type: {
+                    name: "ByteArray"
+                }
+            },
+            errorCode: {
+                serializedName: "x-ms-error-code",
+                type: {
+                    name: "String"
+                }
+            }
+        }
+    }
+};
+var BlobGetTagsHeaders = {
+    serializedName: "blob-gettags-headers",
+    type: {
+        name: "Composite",
+        className: "BlobGetTagsHeaders",
+        modelProperties: {
+            clientRequestId: {
+                serializedName: "x-ms-client-request-id",
+                type: {
+                    name: "String"
+                }
+            },
+            requestId: {
+                serializedName: "x-ms-request-id",
+                type: {
+                    name: "String"
+                }
+            },
+            version: {
+                serializedName: "x-ms-version",
+                type: {
+                    name: "String"
+                }
+            },
+            date: {
+                serializedName: "date",
+                type: {
+                    name: "DateTimeRfc1123"
+                }
+            },
+            errorCode: {
+                serializedName: "x-ms-error-code",
+                type: {
+                    name: "String"
+                }
+            }
+        }
+    }
+};
+var BlobSetTagsHeaders = {
+    serializedName: "blob-settags-headers",
+    type: {
+        name: "Composite",
+        className: "BlobSetTagsHeaders",
+        modelProperties: {
+            clientRequestId: {
+                serializedName: "x-ms-client-request-id",
+                type: {
+                    name: "String"
+                }
+            },
+            requestId: {
+                serializedName: "x-ms-request-id",
+                type: {
+                    name: "String"
+                }
+            },
+            version: {
+                serializedName: "x-ms-version",
+                type: {
+                    name: "String"
+                }
+            },
+            date: {
+                serializedName: "date",
+                type: {
+                    name: "DateTimeRfc1123"
+                }
+            },
+            errorCode: {
+                serializedName: "x-ms-error-code",
+                type: {
+                    name: "String"
+                }
+            }
+        }
+    }
+};
 
 /*
  * Copyright (c) Microsoft Corporation. All rights reserved.
@@ -12522,12 +15091,15 @@ var Mappers = /*#__PURE__*/Object.freeze({
     ContainerItem: ContainerItem,
     ContainerProperties: ContainerProperties,
     CorsRule: CorsRule,
+    FilterBlobItem: FilterBlobItem,
+    FilterBlobSegment: FilterBlobSegment,
     GeoReplication: GeoReplication,
     KeyInfo: KeyInfo,
     ListContainersSegmentResponse: ListContainersSegmentResponse,
     Logging: Logging,
     Metrics: Metrics,
     RetentionPolicy: RetentionPolicy,
+    ServiceFilterBlobsHeaders: ServiceFilterBlobsHeaders,
     ServiceGetAccountInfoHeaders: ServiceGetAccountInfoHeaders,
     ServiceGetPropertiesHeaders: ServiceGetPropertiesHeaders,
     ServiceGetStatisticsHeaders: ServiceGetStatisticsHeaders,
@@ -12759,6 +15331,18 @@ var blobSequenceNumber = {
         }
     }
 };
+var blobTagsString = {
+    parameterPath: [
+        "options",
+        "blobTagsString"
+    ],
+    mapper: {
+        serializedName: "x-ms-tags",
+        type: {
+            name: "String"
+        }
+    }
+};
 var blobType0 = {
     parameterPath: "blobType",
     mapper: {
@@ -12860,7 +15444,7 @@ var comp10 = {
         required: true,
         isConstant: true,
         serializedName: "comp",
-        defaultValue: 'copy',
+        defaultValue: 'expiry',
         type: {
             name: "String"
         }
@@ -12872,7 +15456,7 @@ var comp11 = {
         required: true,
         isConstant: true,
         serializedName: "comp",
-        defaultValue: 'tier',
+        defaultValue: 'snapshot',
         type: {
             name: "String"
         }
@@ -12884,7 +15468,7 @@ var comp12 = {
         required: true,
         isConstant: true,
         serializedName: "comp",
-        defaultValue: 'page',
+        defaultValue: 'copy',
         type: {
             name: "String"
         }
@@ -12896,7 +15480,7 @@ var comp13 = {
         required: true,
         isConstant: true,
         serializedName: "comp",
-        defaultValue: 'pagelist',
+        defaultValue: 'tier',
         type: {
             name: "String"
         }
@@ -12908,7 +15492,7 @@ var comp14 = {
         required: true,
         isConstant: true,
         serializedName: "comp",
-        defaultValue: 'incrementalcopy',
+        defaultValue: 'query',
         type: {
             name: "String"
         }
@@ -12920,7 +15504,7 @@ var comp15 = {
         required: true,
         isConstant: true,
         serializedName: "comp",
-        defaultValue: 'appendblock',
+        defaultValue: 'tags',
         type: {
             name: "String"
         }
@@ -12932,7 +15516,7 @@ var comp16 = {
         required: true,
         isConstant: true,
         serializedName: "comp",
-        defaultValue: 'block',
+        defaultValue: 'page',
         type: {
             name: "String"
         }
@@ -12944,7 +15528,31 @@ var comp17 = {
         required: true,
         isConstant: true,
         serializedName: "comp",
-        defaultValue: 'blocklist',
+        defaultValue: 'pagelist',
+        type: {
+            name: "String"
+        }
+    }
+};
+var comp18 = {
+    parameterPath: "comp",
+    mapper: {
+        required: true,
+        isConstant: true,
+        serializedName: "comp",
+        defaultValue: 'incrementalcopy',
+        type: {
+            name: "String"
+        }
+    }
+};
+var comp19 = {
+    parameterPath: "comp",
+    mapper: {
+        required: true,
+        isConstant: true,
+        serializedName: "comp",
+        defaultValue: 'appendblock',
         type: {
             name: "String"
         }
@@ -12957,6 +15565,42 @@ var comp2 = {
         isConstant: true,
         serializedName: "comp",
         defaultValue: 'list',
+        type: {
+            name: "String"
+        }
+    }
+};
+var comp20 = {
+    parameterPath: "comp",
+    mapper: {
+        required: true,
+        isConstant: true,
+        serializedName: "comp",
+        defaultValue: 'seal',
+        type: {
+            name: "String"
+        }
+    }
+};
+var comp21 = {
+    parameterPath: "comp",
+    mapper: {
+        required: true,
+        isConstant: true,
+        serializedName: "comp",
+        defaultValue: 'block',
+        type: {
+            name: "String"
+        }
+    }
+};
+var comp22 = {
+    parameterPath: "comp",
+    mapper: {
+        required: true,
+        isConstant: true,
+        serializedName: "comp",
+        defaultValue: 'blocklist',
         type: {
             name: "String"
         }
@@ -12992,7 +15636,7 @@ var comp5 = {
         required: true,
         isConstant: true,
         serializedName: "comp",
-        defaultValue: 'metadata',
+        defaultValue: 'blobs',
         type: {
             name: "String"
         }
@@ -13004,7 +15648,7 @@ var comp6 = {
         required: true,
         isConstant: true,
         serializedName: "comp",
-        defaultValue: 'acl',
+        defaultValue: 'metadata',
         type: {
             name: "String"
         }
@@ -13016,7 +15660,7 @@ var comp7 = {
         required: true,
         isConstant: true,
         serializedName: "comp",
-        defaultValue: 'lease',
+        defaultValue: 'acl',
         type: {
             name: "String"
         }
@@ -13040,7 +15684,7 @@ var comp9 = {
         required: true,
         isConstant: true,
         serializedName: "comp",
-        defaultValue: 'snapshot',
+        defaultValue: 'lease',
         type: {
             name: "String"
         }
@@ -13153,6 +15797,30 @@ var defaultEncryptionScope = {
         }
     }
 };
+var deletedContainerName = {
+    parameterPath: [
+        "options",
+        "deletedContainerName"
+    ],
+    mapper: {
+        serializedName: "x-ms-deleted-container-name",
+        type: {
+            name: "String"
+        }
+    }
+};
+var deletedContainerVersion = {
+    parameterPath: [
+        "options",
+        "deletedContainerVersion"
+    ],
+    mapper: {
+        serializedName: "x-ms-deleted-container-version",
+        type: {
+            name: "String"
+        }
+    }
+};
 var deleteSnapshots = {
     parameterPath: [
         "options",
@@ -13257,6 +15925,28 @@ var encryptionScope = {
         }
     }
 };
+var expiresOn = {
+    parameterPath: [
+        "options",
+        "expiresOn"
+    ],
+    mapper: {
+        serializedName: "x-ms-expiry-time",
+        type: {
+            name: "String"
+        }
+    }
+};
+var expiryOptions = {
+    parameterPath: "expiryOptions",
+    mapper: {
+        required: true,
+        serializedName: "x-ms-expiry-option",
+        type: {
+            name: "String"
+        }
+    }
+};
 var group = {
     parameterPath: [
         "options",
@@ -13347,6 +16037,19 @@ var ifSequenceNumberLessThanOrEqualTo = {
         }
     }
 };
+var ifTags = {
+    parameterPath: [
+        "options",
+        "modifiedAccessConditions",
+        "ifTags"
+    ],
+    mapper: {
+        serializedName: "x-ms-if-tags",
+        type: {
+            name: "String"
+        }
+    }
+};
 var ifUnmodifiedSince = {
     parameterPath: [
         "options",
@@ -13368,12 +16071,19 @@ var include0 = {
     mapper: {
         serializedName: "include",
         type: {
-            name: "Enum",
-            allowedValues: [
-                "metadata"
-            ]
+            name: "Sequence",
+            element: {
+                type: {
+                    name: "Enum",
+                    allowedValues: [
+                        "metadata",
+                        "deleted"
+                    ]
+                }
+            }
         }
-    }
+    },
+    collectionFormat: coreHttp.QueryCollectionFormat.Csv
 };
 var include1 = {
     parameterPath: [
@@ -13392,7 +16102,9 @@ var include1 = {
                         "deleted",
                         "metadata",
                         "snapshots",
-                        "uncommittedblobs"
+                        "uncommittedblobs",
+                        "versions",
+                        "tags"
                     ]
                 }
             }
@@ -13782,6 +16494,18 @@ var restype2 = {
         }
     }
 };
+var sealBlob = {
+    parameterPath: [
+        "options",
+        "sealBlob"
+    ],
+    mapper: {
+        serializedName: "x-ms-seal-blob",
+        type: {
+            name: "Boolean"
+        }
+    }
+};
 var sequenceNumberAction = {
     parameterPath: "sequenceNumberAction",
     mapper: {
@@ -13867,6 +16591,19 @@ var sourceIfNoneMatch = {
     ],
     mapper: {
         serializedName: "x-ms-source-if-none-match",
+        type: {
+            name: "String"
+        }
+    }
+};
+var sourceIfTags = {
+    parameterPath: [
+        "options",
+        "sourceModifiedAccessConditions",
+        "sourceIfTags"
+    ],
+    mapper: {
+        serializedName: "x-ms-source-if-tags",
         type: {
             name: "String"
         }
@@ -14020,7 +16757,31 @@ var version = {
         required: true,
         isConstant: true,
         serializedName: "x-ms-version",
-        defaultValue: '2019-07-07',
+        defaultValue: '2019-12-12',
+        type: {
+            name: "String"
+        }
+    }
+};
+var versionId = {
+    parameterPath: [
+        "options",
+        "versionId"
+    ],
+    mapper: {
+        serializedName: "versionid",
+        type: {
+            name: "String"
+        }
+    }
+};
+var where = {
+    parameterPath: [
+        "options",
+        "where"
+    ],
+    mapper: {
+        serializedName: "where",
         type: {
             name: "String"
         }
@@ -14096,6 +16857,11 @@ var Service = /** @class */ (function () {
             multipartContentType: multipartContentType,
             options: options
         }, submitBatchOperationSpec, callback);
+    };
+    Service.prototype.filterBlobs = function (options, callback) {
+        return this.client.sendOperationRequest({
+            options: options
+        }, filterBlobsOperationSpec, callback);
     };
     return Service;
 }());
@@ -14316,6 +17082,35 @@ var submitBatchOperationSpec = {
     isXML: true,
     serializer: serializer
 };
+var filterBlobsOperationSpec = {
+    httpMethod: "GET",
+    urlParameters: [
+        url
+    ],
+    queryParameters: [
+        timeoutInSeconds,
+        where,
+        marker0,
+        maxPageSize,
+        comp5
+    ],
+    headerParameters: [
+        version,
+        requestId
+    ],
+    responses: {
+        200: {
+            bodyMapper: FilterBlobSegment,
+            headersMapper: ServiceFilterBlobsHeaders
+        },
+        default: {
+            bodyMapper: StorageError,
+            headersMapper: ServiceFilterBlobsHeaders
+        }
+    },
+    isXML: true,
+    serializer: serializer
+};
 
 /*
  * Copyright (c) Microsoft Corporation. All rights reserved.
@@ -14330,9 +17125,11 @@ var Mappers$1 = /*#__PURE__*/Object.freeze({
     AccessPolicy: AccessPolicy,
     BlobFlatListSegment: BlobFlatListSegment,
     BlobHierarchyListSegment: BlobHierarchyListSegment,
-    BlobItem: BlobItem,
+    BlobItemInternal: BlobItemInternal,
     BlobPrefix: BlobPrefix,
-    BlobProperties: BlobProperties,
+    BlobPropertiesInternal: BlobPropertiesInternal,
+    BlobTag: BlobTag,
+    BlobTags: BlobTags,
     ContainerAcquireLeaseHeaders: ContainerAcquireLeaseHeaders,
     ContainerBreakLeaseHeaders: ContainerBreakLeaseHeaders,
     ContainerChangeLeaseHeaders: ContainerChangeLeaseHeaders,
@@ -14345,6 +17142,7 @@ var Mappers$1 = /*#__PURE__*/Object.freeze({
     ContainerListBlobHierarchySegmentHeaders: ContainerListBlobHierarchySegmentHeaders,
     ContainerReleaseLeaseHeaders: ContainerReleaseLeaseHeaders,
     ContainerRenewLeaseHeaders: ContainerRenewLeaseHeaders,
+    ContainerRestoreHeaders: ContainerRestoreHeaders,
     ContainerSetAccessPolicyHeaders: ContainerSetAccessPolicyHeaders,
     ContainerSetMetadataHeaders: ContainerSetMetadataHeaders,
     ListBlobsFlatSegmentResponse: ListBlobsFlatSegmentResponse,
@@ -14400,6 +17198,11 @@ var Container = /** @class */ (function () {
         return this.client.sendOperationRequest({
             options: options
         }, setAccessPolicyOperationSpec, callback);
+    };
+    Container.prototype.restore = function (options, callback) {
+        return this.client.sendOperationRequest({
+            options: options
+        }, restoreOperationSpec, callback);
     };
     Container.prototype.acquireLease = function (options, callback) {
         return this.client.sendOperationRequest({
@@ -14545,7 +17348,7 @@ var setMetadataOperationSpec = {
     queryParameters: [
         timeoutInSeconds,
         restype2,
-        comp5
+        comp6
     ],
     headerParameters: [
         metadata,
@@ -14575,7 +17378,7 @@ var getAccessPolicyOperationSpec = {
     queryParameters: [
         timeoutInSeconds,
         restype2,
-        comp6
+        comp7
     ],
     headerParameters: [
         version,
@@ -14616,7 +17419,7 @@ var setAccessPolicyOperationSpec = {
     queryParameters: [
         timeoutInSeconds,
         restype2,
-        comp6
+        comp7
     ],
     headerParameters: [
         access,
@@ -14659,6 +17462,35 @@ var setAccessPolicyOperationSpec = {
     isXML: true,
     serializer: serializer$1
 };
+var restoreOperationSpec = {
+    httpMethod: "PUT",
+    path: "{containerName}",
+    urlParameters: [
+        url
+    ],
+    queryParameters: [
+        timeoutInSeconds,
+        restype2,
+        comp8
+    ],
+    headerParameters: [
+        version,
+        requestId,
+        deletedContainerName,
+        deletedContainerVersion
+    ],
+    responses: {
+        201: {
+            headersMapper: ContainerRestoreHeaders
+        },
+        default: {
+            bodyMapper: StorageError,
+            headersMapper: ContainerRestoreHeaders
+        }
+    },
+    isXML: true,
+    serializer: serializer$1
+};
 var acquireLeaseOperationSpec = {
     httpMethod: "PUT",
     path: "{containerName}",
@@ -14667,7 +17499,7 @@ var acquireLeaseOperationSpec = {
     ],
     queryParameters: [
         timeoutInSeconds,
-        comp7,
+        comp9,
         restype2
     ],
     headerParameters: [
@@ -14699,7 +17531,7 @@ var releaseLeaseOperationSpec = {
     ],
     queryParameters: [
         timeoutInSeconds,
-        comp7,
+        comp9,
         restype2
     ],
     headerParameters: [
@@ -14730,7 +17562,7 @@ var renewLeaseOperationSpec = {
     ],
     queryParameters: [
         timeoutInSeconds,
-        comp7,
+        comp9,
         restype2
     ],
     headerParameters: [
@@ -14761,7 +17593,7 @@ var breakLeaseOperationSpec = {
     ],
     queryParameters: [
         timeoutInSeconds,
-        comp7,
+        comp9,
         restype2
     ],
     headerParameters: [
@@ -14792,7 +17624,7 @@ var changeLeaseOperationSpec = {
     ],
     queryParameters: [
         timeoutInSeconds,
-        comp7,
+        comp9,
         restype2
     ],
     headerParameters: [
@@ -14928,17 +17760,28 @@ var Mappers$2 = /*#__PURE__*/Object.freeze({
     BlobGetAccessControlHeaders: BlobGetAccessControlHeaders,
     BlobGetAccountInfoHeaders: BlobGetAccountInfoHeaders,
     BlobGetPropertiesHeaders: BlobGetPropertiesHeaders,
+    BlobGetTagsHeaders: BlobGetTagsHeaders,
+    BlobQueryHeaders: BlobQueryHeaders,
     BlobReleaseLeaseHeaders: BlobReleaseLeaseHeaders,
     BlobRenameHeaders: BlobRenameHeaders,
     BlobRenewLeaseHeaders: BlobRenewLeaseHeaders,
     BlobSetAccessControlHeaders: BlobSetAccessControlHeaders,
+    BlobSetExpiryHeaders: BlobSetExpiryHeaders,
     BlobSetHTTPHeadersHeaders: BlobSetHTTPHeadersHeaders,
     BlobSetMetadataHeaders: BlobSetMetadataHeaders,
+    BlobSetTagsHeaders: BlobSetTagsHeaders,
     BlobSetTierHeaders: BlobSetTierHeaders,
     BlobStartCopyFromURLHeaders: BlobStartCopyFromURLHeaders,
+    BlobTag: BlobTag,
+    BlobTags: BlobTags,
     BlobUndeleteHeaders: BlobUndeleteHeaders,
     DataLakeStorageError: DataLakeStorageError,
     DataLakeStorageErrorError: DataLakeStorageErrorError,
+    DelimitedTextConfiguration: DelimitedTextConfiguration,
+    JsonTextConfiguration: JsonTextConfiguration,
+    QueryFormat: QueryFormat,
+    QueryRequest: QueryRequest,
+    QuerySerialization: QuerySerialization,
     StorageError: StorageError
 });
 
@@ -14995,6 +17838,12 @@ var Blob$1 = /** @class */ (function () {
         return this.client.sendOperationRequest({
             options: options
         }, undeleteOperationSpec, callback);
+    };
+    Blob.prototype.setExpiry = function (expiryOptions, options, callback) {
+        return this.client.sendOperationRequest({
+            expiryOptions: expiryOptions,
+            options: options
+        }, setExpiryOperationSpec, callback);
     };
     Blob.prototype.setHTTPHeaders = function (options, callback) {
         return this.client.sendOperationRequest({
@@ -15069,6 +17918,21 @@ var Blob$1 = /** @class */ (function () {
             options: options
         }, getAccountInfoOperationSpec$2, callback);
     };
+    Blob.prototype.query = function (options, callback) {
+        return this.client.sendOperationRequest({
+            options: options
+        }, queryOperationSpec, callback);
+    };
+    Blob.prototype.getTags = function (options, callback) {
+        return this.client.sendOperationRequest({
+            options: options
+        }, getTagsOperationSpec, callback);
+    };
+    Blob.prototype.setTags = function (options, callback) {
+        return this.client.sendOperationRequest({
+            options: options
+        }, setTagsOperationSpec, callback);
+    };
     return Blob;
 }());
 // Operation Specifications
@@ -15081,6 +17945,7 @@ var downloadOperationSpec = {
     ],
     queryParameters: [
         snapshot,
+        versionId,
         timeoutInSeconds
     ],
     headerParameters: [
@@ -15096,7 +17961,8 @@ var downloadOperationSpec = {
         ifModifiedSince,
         ifUnmodifiedSince,
         ifMatch,
-        ifNoneMatch
+        ifNoneMatch,
+        ifTags
     ],
     responses: {
         200: {
@@ -15133,6 +17999,7 @@ var getPropertiesOperationSpec$2 = {
     ],
     queryParameters: [
         snapshot,
+        versionId,
         timeoutInSeconds
     ],
     headerParameters: [
@@ -15145,7 +18012,8 @@ var getPropertiesOperationSpec$2 = {
         ifModifiedSince,
         ifUnmodifiedSince,
         ifMatch,
-        ifNoneMatch
+        ifNoneMatch,
+        ifTags
     ],
     responses: {
         200: {
@@ -15167,6 +18035,7 @@ var deleteMethodOperationSpec$1 = {
     ],
     queryParameters: [
         snapshot,
+        versionId,
         timeoutInSeconds
     ],
     headerParameters: [
@@ -15177,7 +18046,8 @@ var deleteMethodOperationSpec$1 = {
         ifModifiedSince,
         ifUnmodifiedSince,
         ifMatch,
-        ifNoneMatch
+        ifNoneMatch,
+        ifTags
     ],
     responses: {
         202: {
@@ -15329,6 +18199,34 @@ var undeleteOperationSpec = {
     isXML: true,
     serializer: serializer$2
 };
+var setExpiryOperationSpec = {
+    httpMethod: "PUT",
+    path: "{containerName}/{blob}",
+    urlParameters: [
+        url
+    ],
+    queryParameters: [
+        timeoutInSeconds,
+        comp10
+    ],
+    headerParameters: [
+        version,
+        requestId,
+        expiryOptions,
+        expiresOn
+    ],
+    responses: {
+        200: {
+            headersMapper: BlobSetExpiryHeaders
+        },
+        default: {
+            bodyMapper: StorageError,
+            headersMapper: BlobSetExpiryHeaders
+        }
+    },
+    isXML: true,
+    serializer: serializer$2
+};
 var setHTTPHeadersOperationSpec = {
     httpMethod: "PUT",
     path: "{containerName}/{blob}",
@@ -15352,7 +18250,8 @@ var setHTTPHeadersOperationSpec = {
         ifModifiedSince,
         ifUnmodifiedSince,
         ifMatch,
-        ifNoneMatch
+        ifNoneMatch,
+        ifTags
     ],
     responses: {
         200: {
@@ -15374,7 +18273,7 @@ var setMetadataOperationSpec$1 = {
     ],
     queryParameters: [
         timeoutInSeconds,
-        comp5
+        comp6
     ],
     headerParameters: [
         metadata,
@@ -15388,7 +18287,8 @@ var setMetadataOperationSpec$1 = {
         ifModifiedSince,
         ifUnmodifiedSince,
         ifMatch,
-        ifNoneMatch
+        ifNoneMatch,
+        ifTags
     ],
     responses: {
         200: {
@@ -15410,7 +18310,7 @@ var acquireLeaseOperationSpec$1 = {
     ],
     queryParameters: [
         timeoutInSeconds,
-        comp7
+        comp9
     ],
     headerParameters: [
         duration,
@@ -15421,7 +18321,8 @@ var acquireLeaseOperationSpec$1 = {
         ifModifiedSince,
         ifUnmodifiedSince,
         ifMatch,
-        ifNoneMatch
+        ifNoneMatch,
+        ifTags
     ],
     responses: {
         201: {
@@ -15443,7 +18344,7 @@ var releaseLeaseOperationSpec$1 = {
     ],
     queryParameters: [
         timeoutInSeconds,
-        comp7
+        comp9
     ],
     headerParameters: [
         leaseId1,
@@ -15453,7 +18354,8 @@ var releaseLeaseOperationSpec$1 = {
         ifModifiedSince,
         ifUnmodifiedSince,
         ifMatch,
-        ifNoneMatch
+        ifNoneMatch,
+        ifTags
     ],
     responses: {
         200: {
@@ -15475,7 +18377,7 @@ var renewLeaseOperationSpec$1 = {
     ],
     queryParameters: [
         timeoutInSeconds,
-        comp7
+        comp9
     ],
     headerParameters: [
         leaseId1,
@@ -15485,7 +18387,8 @@ var renewLeaseOperationSpec$1 = {
         ifModifiedSince,
         ifUnmodifiedSince,
         ifMatch,
-        ifNoneMatch
+        ifNoneMatch,
+        ifTags
     ],
     responses: {
         200: {
@@ -15507,7 +18410,7 @@ var changeLeaseOperationSpec$1 = {
     ],
     queryParameters: [
         timeoutInSeconds,
-        comp7
+        comp9
     ],
     headerParameters: [
         leaseId1,
@@ -15518,7 +18421,8 @@ var changeLeaseOperationSpec$1 = {
         ifModifiedSince,
         ifUnmodifiedSince,
         ifMatch,
-        ifNoneMatch
+        ifNoneMatch,
+        ifTags
     ],
     responses: {
         200: {
@@ -15540,7 +18444,7 @@ var breakLeaseOperationSpec$1 = {
     ],
     queryParameters: [
         timeoutInSeconds,
-        comp7
+        comp9
     ],
     headerParameters: [
         breakPeriod,
@@ -15550,7 +18454,8 @@ var breakLeaseOperationSpec$1 = {
         ifModifiedSince,
         ifUnmodifiedSince,
         ifMatch,
-        ifNoneMatch
+        ifNoneMatch,
+        ifTags
     ],
     responses: {
         202: {
@@ -15572,7 +18477,7 @@ var createSnapshotOperationSpec = {
     ],
     queryParameters: [
         timeoutInSeconds,
-        comp9
+        comp11
     ],
     headerParameters: [
         metadata,
@@ -15586,6 +18491,7 @@ var createSnapshotOperationSpec = {
         ifUnmodifiedSince,
         ifMatch,
         ifNoneMatch,
+        ifTags,
         leaseId0
     ],
     responses: {
@@ -15616,14 +18522,18 @@ var startCopyFromURLOperationSpec = {
         copySource,
         version,
         requestId,
+        blobTagsString,
+        sealBlob,
         sourceIfModifiedSince,
         sourceIfUnmodifiedSince,
         sourceIfMatch,
         sourceIfNoneMatch,
+        sourceIfTags,
         ifModifiedSince,
         ifUnmodifiedSince,
         ifMatch,
         ifNoneMatch,
+        ifTags,
         leaseId0
     ],
     responses: {
@@ -15654,6 +18564,7 @@ var copyFromURLOperationSpec = {
         version,
         requestId,
         sourceContentMD5,
+        blobTagsString,
         xMsRequiresSync,
         sourceIfModifiedSince,
         sourceIfUnmodifiedSince,
@@ -15663,6 +18574,7 @@ var copyFromURLOperationSpec = {
         ifUnmodifiedSince,
         ifMatch,
         ifNoneMatch,
+        ifTags,
         leaseId0
     ],
     responses: {
@@ -15686,7 +18598,7 @@ var abortCopyFromURLOperationSpec = {
     queryParameters: [
         copyId,
         timeoutInSeconds,
-        comp10
+        comp12
     ],
     headerParameters: [
         version,
@@ -15713,15 +18625,18 @@ var setTierOperationSpec = {
         url
     ],
     queryParameters: [
+        snapshot,
+        versionId,
         timeoutInSeconds,
-        comp11
+        comp13
     ],
     headerParameters: [
         tier1,
         rehydratePriority,
         version,
         requestId,
-        leaseId0
+        leaseId0,
+        ifTags
     ],
     responses: {
         200: {
@@ -15758,6 +18673,133 @@ var getAccountInfoOperationSpec$2 = {
         default: {
             bodyMapper: StorageError,
             headersMapper: BlobGetAccountInfoHeaders
+        }
+    },
+    isXML: true,
+    serializer: serializer$2
+};
+var queryOperationSpec = {
+    httpMethod: "POST",
+    path: "{containerName}/{blob}",
+    urlParameters: [
+        url
+    ],
+    queryParameters: [
+        snapshot,
+        timeoutInSeconds,
+        comp14
+    ],
+    headerParameters: [
+        version,
+        requestId,
+        leaseId0,
+        encryptionKey,
+        encryptionKeySha256,
+        encryptionAlgorithm,
+        ifModifiedSince,
+        ifUnmodifiedSince,
+        ifMatch,
+        ifNoneMatch,
+        ifTags
+    ],
+    requestBody: {
+        parameterPath: [
+            "options",
+            "queryRequest"
+        ],
+        mapper: QueryRequest
+    },
+    contentType: "application/xml; charset=utf-8",
+    responses: {
+        200: {
+            bodyMapper: {
+                serializedName: "parsedResponse",
+                type: {
+                    name: "Stream"
+                }
+            },
+            headersMapper: BlobQueryHeaders
+        },
+        206: {
+            bodyMapper: {
+                serializedName: "parsedResponse",
+                type: {
+                    name: "Stream"
+                }
+            },
+            headersMapper: BlobQueryHeaders
+        },
+        default: {
+            bodyMapper: StorageError,
+            headersMapper: BlobQueryHeaders
+        }
+    },
+    isXML: true,
+    serializer: serializer$2
+};
+var getTagsOperationSpec = {
+    httpMethod: "GET",
+    path: "{containerName}/{blob}",
+    urlParameters: [
+        url
+    ],
+    queryParameters: [
+        timeoutInSeconds,
+        snapshot,
+        versionId,
+        comp15
+    ],
+    headerParameters: [
+        version,
+        requestId,
+        ifTags
+    ],
+    responses: {
+        200: {
+            bodyMapper: BlobTags,
+            headersMapper: BlobGetTagsHeaders
+        },
+        default: {
+            bodyMapper: StorageError,
+            headersMapper: BlobGetTagsHeaders
+        }
+    },
+    isXML: true,
+    serializer: serializer$2
+};
+var setTagsOperationSpec = {
+    httpMethod: "PUT",
+    path: "{containerName}/{blob}",
+    urlParameters: [
+        url
+    ],
+    queryParameters: [
+        timeoutInSeconds,
+        versionId,
+        comp15
+    ],
+    headerParameters: [
+        version,
+        transactionalContentMD5,
+        transactionalContentCrc64,
+        requestId,
+        ifTags
+    ],
+    requestBody: {
+        parameterPath: [
+            "options",
+            "tags"
+        ],
+        mapper: BlobTags
+    },
+    contentType: "application/xml; charset=utf-8",
+    responses: {
+        204: {
+            headersMapper: BlobSetTagsHeaders
+        },
+        default: {
+            bodyMapper: StorageError,
+            headersMapper: BlobSetTagsHeaders
         }
     },
     isXML: true,
@@ -15886,6 +18928,7 @@ var createOperationSpec$1 = {
         blobSequenceNumber,
         version,
         requestId,
+        blobTagsString,
         blobType0,
         blobContentType,
         blobContentEncoding,
@@ -15900,7 +18943,8 @@ var createOperationSpec$1 = {
         ifModifiedSince,
         ifUnmodifiedSince,
         ifMatch,
-        ifNoneMatch
+        ifNoneMatch,
+        ifTags
     ],
     responses: {
         201: {
@@ -15922,7 +18966,7 @@ var uploadPagesOperationSpec = {
     ],
     queryParameters: [
         timeoutInSeconds,
-        comp12
+        comp16
     ],
     headerParameters: [
         contentLength,
@@ -15943,7 +18987,8 @@ var uploadPagesOperationSpec = {
         ifModifiedSince,
         ifUnmodifiedSince,
         ifMatch,
-        ifNoneMatch
+        ifNoneMatch,
+        ifTags
     ],
     requestBody: {
         parameterPath: "body",
@@ -15976,7 +19021,7 @@ var clearPagesOperationSpec = {
     ],
     queryParameters: [
         timeoutInSeconds,
-        comp12
+        comp16
     ],
     headerParameters: [
         contentLength,
@@ -15995,7 +19040,8 @@ var clearPagesOperationSpec = {
         ifModifiedSince,
         ifUnmodifiedSince,
         ifMatch,
-        ifNoneMatch
+        ifNoneMatch,
+        ifTags
     ],
     responses: {
         201: {
@@ -16017,7 +19063,7 @@ var uploadPagesFromURLOperationSpec = {
     ],
     queryParameters: [
         timeoutInSeconds,
-        comp12
+        comp16
     ],
     headerParameters: [
         sourceUrl,
@@ -16041,6 +19087,7 @@ var uploadPagesFromURLOperationSpec = {
         ifUnmodifiedSince,
         ifMatch,
         ifNoneMatch,
+        ifTags,
         sourceIfModifiedSince,
         sourceIfUnmodifiedSince,
         sourceIfMatch,
@@ -16067,7 +19114,7 @@ var getPageRangesOperationSpec = {
     queryParameters: [
         snapshot,
         timeoutInSeconds,
-        comp13
+        comp17
     ],
     headerParameters: [
         range0,
@@ -16077,7 +19124,8 @@ var getPageRangesOperationSpec = {
         ifModifiedSince,
         ifUnmodifiedSince,
         ifMatch,
-        ifNoneMatch
+        ifNoneMatch,
+        ifTags
     ],
     responses: {
         200: {
@@ -16102,7 +19150,7 @@ var getPageRangesDiffOperationSpec = {
         snapshot,
         timeoutInSeconds,
         prevsnapshot,
-        comp13
+        comp17
     ],
     headerParameters: [
         prevSnapshotUrl,
@@ -16113,7 +19161,8 @@ var getPageRangesDiffOperationSpec = {
         ifModifiedSince,
         ifUnmodifiedSince,
         ifMatch,
-        ifNoneMatch
+        ifNoneMatch,
+        ifTags
     ],
     responses: {
         200: {
@@ -16150,7 +19199,8 @@ var resizeOperationSpec = {
         ifModifiedSince,
         ifUnmodifiedSince,
         ifMatch,
-        ifNoneMatch
+        ifNoneMatch,
+        ifTags
     ],
     responses: {
         200: {
@@ -16183,7 +19233,8 @@ var updateSequenceNumberOperationSpec = {
         ifModifiedSince,
         ifUnmodifiedSince,
         ifMatch,
-        ifNoneMatch
+        ifNoneMatch,
+        ifTags
     ],
     responses: {
         200: {
@@ -16205,7 +19256,7 @@ var copyIncrementalOperationSpec = {
     ],
     queryParameters: [
         timeoutInSeconds,
-        comp14
+        comp18
     ],
     headerParameters: [
         copySource,
@@ -16214,7 +19265,8 @@ var copyIncrementalOperationSpec = {
         ifModifiedSince,
         ifUnmodifiedSince,
         ifMatch,
-        ifNoneMatch
+        ifNoneMatch,
+        ifTags
     ],
     responses: {
         202: {
@@ -16242,6 +19294,7 @@ var Mappers$4 = /*#__PURE__*/Object.freeze({
     AppendBlobAppendBlockFromUrlHeaders: AppendBlobAppendBlockFromUrlHeaders,
     AppendBlobAppendBlockHeaders: AppendBlobAppendBlockHeaders,
     AppendBlobCreateHeaders: AppendBlobCreateHeaders,
+    AppendBlobSealHeaders: AppendBlobSealHeaders,
     StorageError: StorageError
 });
 
@@ -16283,6 +19336,11 @@ var AppendBlob = /** @class */ (function () {
             options: options
         }, appendBlockFromUrlOperationSpec, callback);
     };
+    AppendBlob.prototype.seal = function (options, callback) {
+        return this.client.sendOperationRequest({
+            options: options
+        }, sealOperationSpec, callback);
+    };
     return AppendBlob;
 }());
 // Operation Specifications
@@ -16302,6 +19360,7 @@ var createOperationSpec$2 = {
         encryptionScope,
         version,
         requestId,
+        blobTagsString,
         blobType1,
         blobContentType,
         blobContentEncoding,
@@ -16316,7 +19375,8 @@ var createOperationSpec$2 = {
         ifModifiedSince,
         ifUnmodifiedSince,
         ifMatch,
-        ifNoneMatch
+        ifNoneMatch,
+        ifTags
     ],
     responses: {
         201: {
@@ -16338,7 +19398,7 @@ var appendBlockOperationSpec = {
     ],
     queryParameters: [
         timeoutInSeconds,
-        comp15
+        comp19
     ],
     headerParameters: [
         contentLength,
@@ -16356,7 +19416,8 @@ var appendBlockOperationSpec = {
         ifModifiedSince,
         ifUnmodifiedSince,
         ifMatch,
-        ifNoneMatch
+        ifNoneMatch,
+        ifTags
     ],
     requestBody: {
         parameterPath: "body",
@@ -16389,7 +19450,7 @@ var appendBlockFromUrlOperationSpec = {
     ],
     queryParameters: [
         timeoutInSeconds,
-        comp15
+        comp19
     ],
     headerParameters: [
         sourceUrl,
@@ -16411,6 +19472,7 @@ var appendBlockFromUrlOperationSpec = {
         ifUnmodifiedSince,
         ifMatch,
         ifNoneMatch,
+        ifTags,
         sourceIfModifiedSince,
         sourceIfUnmodifiedSince,
         sourceIfMatch,
@@ -16423,6 +19485,38 @@ var appendBlockFromUrlOperationSpec = {
         default: {
             bodyMapper: StorageError,
             headersMapper: AppendBlobAppendBlockFromUrlHeaders
+        }
+    },
+    isXML: true,
+    serializer: serializer$4
+};
+var sealOperationSpec = {
+    httpMethod: "PUT",
+    path: "{containerName}/{blob}",
+    urlParameters: [
+        url
+    ],
+    queryParameters: [
+        timeoutInSeconds,
+        comp20
+    ],
+    headerParameters: [
+        version,
+        requestId,
+        leaseId0,
+        ifModifiedSince,
+        ifUnmodifiedSince,
+        ifMatch,
+        ifNoneMatch,
+        appendPosition
+    ],
+    responses: {
+        200: {
+            headersMapper: AppendBlobSealHeaders
+        },
+        default: {
+            bodyMapper: StorageError,
+            headersMapper: AppendBlobSealHeaders
         }
     },
     isXML: true,
@@ -16524,6 +19618,7 @@ var uploadOperationSpec = {
         tier0,
         version,
         requestId,
+        blobTagsString,
         blobType2,
         blobContentType,
         blobContentEncoding,
@@ -16538,7 +19633,8 @@ var uploadOperationSpec = {
         ifModifiedSince,
         ifUnmodifiedSince,
         ifMatch,
-        ifNoneMatch
+        ifNoneMatch,
+        ifTags
     ],
     requestBody: {
         parameterPath: "body",
@@ -16572,7 +19668,7 @@ var stageBlockOperationSpec = {
     queryParameters: [
         blockId,
         timeoutInSeconds,
-        comp16
+        comp21
     ],
     headerParameters: [
         contentLength,
@@ -16618,7 +19714,7 @@ var stageBlockFromURLOperationSpec = {
     queryParameters: [
         blockId,
         timeoutInSeconds,
-        comp16
+        comp21
     ],
     headerParameters: [
         contentLength,
@@ -16658,7 +19754,7 @@ var commitBlockListOperationSpec = {
     ],
     queryParameters: [
         timeoutInSeconds,
-        comp17
+        comp22
     ],
     headerParameters: [
         transactionalContentMD5,
@@ -16668,6 +19764,7 @@ var commitBlockListOperationSpec = {
         tier0,
         version,
         requestId,
+        blobTagsString,
         blobCacheControl,
         blobContentType,
         blobContentEncoding,
@@ -16681,7 +19778,8 @@ var commitBlockListOperationSpec = {
         ifModifiedSince,
         ifUnmodifiedSince,
         ifMatch,
-        ifNoneMatch
+        ifNoneMatch,
+        ifTags
     ],
     requestBody: {
         parameterPath: "blocks",
@@ -16710,12 +19808,13 @@ var getBlockListOperationSpec = {
         snapshot,
         listType,
         timeoutInSeconds,
-        comp17
+        comp22
     ],
     headerParameters: [
         version,
         requestId,
-        leaseId0
+        leaseId0,
+        ifTags
     ],
     responses: {
         200: {
@@ -16739,10 +19838,10 @@ var logger = logger$1.createClientLogger("storage-blob");
 
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
-var SDK_VERSION = "12.1.2";
-var SERVICE_VERSION = "2019-07-07";
+var SDK_VERSION = "12.2.1";
+var SERVICE_VERSION = "2019-12-12";
 var BLOCK_BLOB_MAX_UPLOAD_BLOB_BYTES = 256 * 1024 * 1024; // 256MB
-var BLOCK_BLOB_MAX_STAGE_BLOCK_BYTES = 100 * 1024 * 1024; // 100MB
+var BLOCK_BLOB_MAX_STAGE_BLOCK_BYTES = 4000 * 1024 * 1024; // 4000MB
 var BLOCK_BLOB_MAX_BLOCKS = 50000;
 var DEFAULT_BLOCK_BUFFER_SIZE_BYTES = 8 * 1024 * 1024; // 8MB
 var DEFAULT_BLOB_DOWNLOAD_BLOCK_BYTES = 4 * 1024 * 1024; // 4MB
@@ -16756,6 +19855,7 @@ var URLConstants = {
         FORCE_BROWSER_NO_CACHE: "_",
         SIGNATURE: "sig",
         SNAPSHOT: "snapshot",
+        VERSIONID: "versionid",
         TIMEOUT: "timeout"
     }
 };
@@ -16792,6 +19892,7 @@ var HeaderConstants = {
     X_MS_VERSION: "x-ms-version"
 };
 var ETagNone = "";
+var ETagAny = "*";
 var SIZE_1_MB = 1 * 1024 * 1024;
 var BATCH_MAX_REQUEST = 256;
 var BATCH_MAX_PAYLOAD_IN_BYTES = 4 * SIZE_1_MB;
@@ -16891,7 +19992,9 @@ var StorageBlobLoggingAllowedHeaderNames = [
     "x-ms-source-if-none-match",
     "x-ms-source-if-unmodified-since",
     "x-ms-tag-count",
-    "x-ms-encryption-key-sha256"
+    "x-ms-encryption-key-sha256",
+    "x-ms-if-tags",
+    "x-ms-source-if-tags"
 ];
 var StorageBlobLoggingAllowedQueryParameters = [
     "comp",
@@ -16935,7 +20038,7 @@ var StorageBlobLoggingAllowedQueryParameters = [
  *
  * ## URL encode and escape strategy for JS SDKs
  *
- * When customers pass a URL string into XxxClient classes constrcutor, the URL string may already be URL encoded or not.
+ * When customers pass a URL string into XxxClient classes constructor, the URL string may already be URL encoded or not.
  * But before sending to Azure Storage server, the URL must be encoded. However, it's hard for a SDK to guess whether the URL
  * string has been encoded or not. We have 2 potential strategies, and chose strategy two for the XxxClient constructors.
  *
@@ -16965,7 +20068,7 @@ var StorageBlobLoggingAllowedQueryParameters = [
  *
  * This strategy gives us flexibility to create with any special characters. But "%" will be treated as a special characters, if the URL string
  * is not encoded, there shouldn't a "%" in the URL string, otherwise the URL is not a valid URL.
- * If customer needs to create a blob with "%" in it's blob name, use "%25" insead of "%". Just like above 3rd sample.
+ * If customer needs to create a blob with "%" in it's blob name, use "%25" instead of "%". Just like above 3rd sample.
  * And following URL strings are invalid:
  * - "http://account.blob.core.windows.net/con/b%"
  * - "http://account.blob.core.windows.net/con/b%2"
@@ -17085,14 +20188,11 @@ function extractConnectionStringParts(connectionString) {
         else if (!accountSas) {
             throw new Error("Invalid SharedAccessSignature in the provided SAS Connection String");
         }
-        else if (!accountName) {
-            throw new Error("Invalid AccountName in the provided SAS Connection String");
-        }
         return { kind: "SASConnString", url: blobEndpoint, accountName: accountName, accountSas: accountSas };
     }
 }
 /**
- * Internal escape method implmented Strategy Two mentioned in escapeURL() description.
+ * Internal escape method implemented Strategy Two mentioned in escapeURL() description.
  *
  * @param {string} text
  * @returns {string}
@@ -17311,6 +20411,8 @@ function delay(timeInMs, aborter, abortError) {
  */
 function padStart(currentString, targetLength, padString) {
     if (padString === void 0) { padString = " "; }
+    // TS doesn't know this code needs to run downlevel sometimes.
+    // @ts-expect-error
     if (String.prototype.padStart) {
         return currentString.padStart(targetLength, padString);
     }
@@ -17350,20 +20452,169 @@ function getAccountNameFromUrl(url) {
             // `${defaultEndpointsProtocol}://${accountName}.blob.${endpointSuffix}`;
             accountName = parsedUrl.getHost().split(".")[0];
         }
-        else {
+        else if (isIpEndpointStyle(parsedUrl)) {
             // IPv4/IPv6 address hosts... Example - http://192.0.0.10:10001/devstoreaccount1/
             // Single word domain without a [dot] in the endpoint... Example - http://localhost:10001/devstoreaccount1/
             // .getPath() -> /devstoreaccount1/
             accountName = parsedUrl.getPath().split("/")[1];
         }
-        if (!accountName) {
-            throw new Error("Provided accountName is invalid.");
+        else {
+            // Custom domain case: "https://customdomain.com/containername/blob".
+            accountName = "";
         }
         return accountName;
     }
     catch (error) {
         throw new Error("Unable to extract accountName with provided information.");
     }
+}
+function isIpEndpointStyle(parsedUrl) {
+    if (parsedUrl.getHost() == undefined) {
+        return false;
+    }
+    var host = parsedUrl.getHost() + (parsedUrl.getPort() == undefined ? "" : ":" + parsedUrl.getPort());
+    // Case 1: Ipv6, use a broad regex to find out candidates whose host contains two ':'.
+    // Case 2: localhost(:port), use broad regex to match port part.
+    // Case 3: Ipv4, use broad regex which just check if host contains Ipv4.
+    // For valid host please refer to https://man7.org/linux/man-pages/man7/hostname.7.html.
+    return /^.*:.*:.*$|^localhost(:[0-9]+)?$|^(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])(\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])){3}(:[0-9]+)?$/.test(host);
+}
+/**
+ * Convert Tags to encoded string.
+ *
+ * @export
+ * @param {Tags} tags
+ * @returns {string | undefined}
+ */
+function toBlobTagsString(tags) {
+    if (tags === undefined) {
+        return undefined;
+    }
+    var tagPairs = [];
+    for (var key in tags) {
+        if (tags.hasOwnProperty(key)) {
+            var value = tags[key];
+            tagPairs.push(encodeURIComponent(key) + "=" + encodeURIComponent(value));
+        }
+    }
+    return tagPairs.join("&");
+}
+/**
+ * Convert Tags type to BlobTags.
+ *
+ * @export
+ * @param {Tags} [tags]
+ * @returns {(BlobTags | undefined)}
+ */
+function toBlobTags(tags) {
+    if (tags === undefined) {
+        return undefined;
+    }
+    var res = {
+        blobTagSet: []
+    };
+    for (var key in tags) {
+        if (tags.hasOwnProperty(key)) {
+            var value = tags[key];
+            res.blobTagSet.push({
+                key: key,
+                value: value
+            });
+        }
+    }
+    return res;
+}
+/**
+ * Covert BlobTags to Tags type.
+ *
+ * @export
+ * @param {BlobTags} [tags]
+ * @returns {(Tags | undefined)}
+ */
+function toTags(tags) {
+    if (tags === undefined) {
+        return undefined;
+    }
+    var res = {};
+    for (var _i = 0, _a = tags.blobTagSet; _i < _a.length; _i++) {
+        var blobTag = _a[_i];
+        res[blobTag.key] = blobTag.value;
+    }
+    return res;
+}
+/**
+ * Convert BlobQueryTextConfiguration to QuerySerialization type.
+ *
+ * @export
+ * @param {(BlobQueryJsonTextConfiguration | BlobQueryCsvTextConfiguration)} [textConfiguration]
+ * @returns {(QuerySerialization | undefined)}
+ */
+function toQuerySerialization(textConfiguration) {
+    if (textConfiguration === undefined) {
+        return undefined;
+    }
+    switch (textConfiguration.kind) {
+        case "csv":
+            return {
+                format: {
+                    type: "delimited",
+                    delimitedTextConfiguration: {
+                        columnSeparator: textConfiguration.columnSeparator || ",",
+                        fieldQuote: textConfiguration.fieldQuote || "",
+                        recordSeparator: textConfiguration.recordSeparator,
+                        escapeChar: textConfiguration.escapeCharacter || "",
+                        headersPresent: textConfiguration.hasHeaders || false
+                    }
+                }
+            };
+        case "json":
+            return {
+                format: {
+                    type: "json",
+                    jsonTextConfiguration: {
+                        recordSeparator: textConfiguration.recordSeparator
+                    }
+                }
+            };
+        default:
+            throw Error("Invalid BlobQueryTextConfiguration.");
+    }
+}
+function parseObjectReplicationRecord(objectReplicationRecord) {
+    if (!objectReplicationRecord) {
+        return undefined;
+    }
+    if ("policy-id" in objectReplicationRecord) {
+        // If the dictionary contains a key with policy id, we are not required to do any parsing since
+        // the policy id should already be stored in the ObjectReplicationDestinationPolicyId.
+        return undefined;
+    }
+    var orProperties = [];
+    var _loop_1 = function (key) {
+        var ids = key.split("_");
+        var policyPrefix = "or-";
+        if (ids[0].startsWith(policyPrefix)) {
+            ids[0] = ids[0].substring(policyPrefix.length);
+        }
+        var rule = {
+            ruleId: ids[1],
+            replicationStatus: objectReplicationRecord[key]
+        };
+        var policyIndex = orProperties.findIndex(function (policy) { return policy.policyId === ids[0]; });
+        if (policyIndex > -1) {
+            orProperties[policyIndex].rules.push(rule);
+        }
+        else {
+            orProperties.push({
+                policyId: ids[0],
+                rules: [rule]
+            });
+        }
+    };
+    for (var key in objectReplicationRecord) {
+        _loop_1(key);
+    }
+    return orProperties;
 }
 
 // Copyright (c) Microsoft Corporation. All rights reserved.
@@ -17704,6 +20955,133 @@ var StorageRetryPolicyFactory = /** @class */ (function () {
 
 // Copyright (c) Microsoft Corporation. All rights reserved.
 /**
+ * Credential policy used to sign HTTP(S) requests before sending. This is an
+ * abstract class.
+ *
+ * @export
+ * @abstract
+ * @class CredentialPolicy
+ * @extends {BaseRequestPolicy}
+ */
+var CredentialPolicy = /** @class */ (function (_super) {
+    tslib.__extends(CredentialPolicy, _super);
+    function CredentialPolicy() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    /**
+     * Sends out request.
+     *
+     * @param {WebResource} request
+     * @returns {Promise<HttpOperationResponse>}
+     * @memberof CredentialPolicy
+     */
+    CredentialPolicy.prototype.sendRequest = function (request) {
+        return this._nextPolicy.sendRequest(this.signRequest(request));
+    };
+    /**
+     * Child classes must implement this method with request signing. This method
+     * will be executed in {@link sendRequest}.
+     *
+     * @protected
+     * @abstract
+     * @param {WebResource} request
+     * @returns {WebResource}
+     * @memberof CredentialPolicy
+     */
+    CredentialPolicy.prototype.signRequest = function (request) {
+        // Child classes must override this method with request signing. This method
+        // will be executed in sendRequest().
+        return request;
+    };
+    return CredentialPolicy;
+}(coreHttp.BaseRequestPolicy));
+
+// Copyright (c) Microsoft Corporation. All rights reserved.
+/**
+ * AnonymousCredentialPolicy is used with HTTP(S) requests that read public resources
+ * or for use with Shared Access Signatures (SAS).
+ *
+ * @export
+ * @class AnonymousCredentialPolicy
+ * @extends {CredentialPolicy}
+ */
+var AnonymousCredentialPolicy = /** @class */ (function (_super) {
+    tslib.__extends(AnonymousCredentialPolicy, _super);
+    /**
+     * Creates an instance of AnonymousCredentialPolicy.
+     * @param {RequestPolicy} nextPolicy
+     * @param {RequestPolicyOptions} options
+     * @memberof AnonymousCredentialPolicy
+     */
+    function AnonymousCredentialPolicy(nextPolicy, options) {
+        return _super.call(this, nextPolicy, options) || this;
+    }
+    return AnonymousCredentialPolicy;
+}(CredentialPolicy));
+
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+/**
+ * Credential is an abstract class for Azure Storage HTTP requests signing. This
+ * class will host an credentialPolicyCreator factory which generates CredentialPolicy.
+ *
+ * @export
+ * @abstract
+ * @class Credential
+ */
+var Credential = /** @class */ (function () {
+    function Credential() {
+    }
+    /**
+     * Creates a RequestPolicy object.
+     *
+     * @param {RequestPolicy} _nextPolicy
+     * @param {RequestPolicyOptions} _options
+     * @returns {RequestPolicy}
+     * @memberof Credential
+     */
+    Credential.prototype.create = function (
+    // tslint:disable-next-line:variable-name
+    _nextPolicy, 
+    // tslint:disable-next-line:variable-name
+    _options) {
+        throw new Error("Method should be implemented in children classes.");
+    };
+    return Credential;
+}());
+
+// Copyright (c) Microsoft Corporation. All rights reserved.
+/**
+ * AnonymousCredential provides a credentialPolicyCreator member used to create
+ * AnonymousCredentialPolicy objects. AnonymousCredentialPolicy is used with
+ * HTTP(S) requests that read public resources or for use with Shared Access
+ * Signatures (SAS).
+ *
+ * @export
+ * @class AnonymousCredential
+ * @extends {Credential}
+ */
+var AnonymousCredential = /** @class */ (function (_super) {
+    tslib.__extends(AnonymousCredential, _super);
+    function AnonymousCredential() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    /**
+     * Creates an {@link AnonymousCredentialPolicy} object.
+     *
+     * @param {RequestPolicy} nextPolicy
+     * @param {RequestPolicyOptions} options
+     * @returns {AnonymousCredentialPolicy}
+     * @memberof AnonymousCredential
+     */
+    AnonymousCredential.prototype.create = function (nextPolicy, options) {
+        return new AnonymousCredentialPolicy(nextPolicy, options);
+    };
+    return AnonymousCredential;
+}(Credential));
+
+// Copyright (c) Microsoft Corporation. All rights reserved.
+/**
  * TelemetryPolicy is a policy used to tag user-agent header for every requests.
  *
  * @class TelemetryPolicy
@@ -17766,6 +21144,8 @@ var TelemetryPolicyFactory = /** @class */ (function () {
         var userAgentInfo = [];
         {
             if (telemetry) {
+                // FIXME: replace() only replaces the first space. And we have no idea why we need to replace spaces in the first place.
+                // But fixing this would be a breaking change. Logged an issue here: https://github.com/Azure/azure-sdk-for-js/issues/10793
                 var telemetryString = (telemetry.userAgentPrefix || "").replace(" ", "");
                 if (telemetryString.length > 0 && userAgentInfo.indexOf(telemetryString) === -1) {
                     userAgentInfo.push(telemetryString);
@@ -17855,10 +21235,13 @@ var Pipeline = /** @class */ (function () {
  * @returns {Pipeline} A new Pipeline object.
  */
 function newPipeline(credential, pipelineOptions) {
+    if (pipelineOptions === void 0) { pipelineOptions = {}; }
+    if (credential === undefined) {
+        credential = new AnonymousCredential();
+    }
     // Order is important. Closer to the API at the top & closer to the network at the bottom.
     // The credential's policy factory must appear close to the wire so it can sign any
     // changes made by other factories (like UniqueRequestIDPolicyFactory)
-    if (pipelineOptions === void 0) { pipelineOptions = {}; }
     var telemetryPolicy = new TelemetryPolicyFactory(pipelineOptions.userAgentOptions);
     var factories = [
         coreHttp.tracingPolicy({ userAgent: telemetryPolicy.telemetryString }),
@@ -17875,7 +21258,7 @@ function newPipeline(credential, pipelineOptions) {
         })
     ];
     {
-        // policies only avaiable in Node.js runtime, not in browsers
+        // policies only available in Node.js runtime, not in browsers
         factories.push(coreHttp.proxyPolicy(pipelineOptions.proxyOptions));
         factories.push(coreHttp.disableResponseDecompressionPolicy());
     }
@@ -18013,7 +21396,7 @@ var RetriableReadableStream = /** @class */ (function (_super) {
 /**
  * ONLY AVAILABLE IN NODE.JS RUNTIME.
  *
- * BlobDownloadResponse implements BlobDownloadResponseModel interface, and in Node.js runtime it will
+ * BlobDownloadResponse implements BlobDownloadResponseParsed interface, and in Node.js runtime it will
  * automatically retry when internal read stream unexpected ends. (This kind of unexpected ends cannot
  * trigger retries defined in pipeline retry policy.)
  *
@@ -18022,13 +21405,13 @@ var RetriableReadableStream = /** @class */ (function (_super) {
  *
  * @export
  * @class BlobDownloadResponse
- * @implements {BlobDownloadResponseModel}
+ * @implements {BlobDownloadResponseParsed}
  */
 var BlobDownloadResponse = /** @class */ (function () {
     /**
      * Creates an instance of BlobDownloadResponse.
      *
-     * @param {BlobDownloadResponseModel} originalResponse
+     * @param {BlobDownloadResponseParsed} originalResponse
      * @param {ReadableStreamGetter} getter
      * @param {number} offset
      * @param {number} count
@@ -18052,7 +21435,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.acceptRanges;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "cacheControl", {
@@ -18067,7 +21450,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.cacheControl;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "contentDisposition", {
@@ -18083,7 +21466,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.contentDisposition;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "contentEncoding", {
@@ -18098,7 +21481,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.contentEncoding;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "contentLanguage", {
@@ -18113,7 +21496,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.contentLanguage;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "blobSequenceNumber", {
@@ -18128,7 +21511,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.blobSequenceNumber;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "blobType", {
@@ -18143,7 +21526,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.blobType;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "contentLength", {
@@ -18158,7 +21541,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.contentLength;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "contentMD5", {
@@ -18179,7 +21562,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.contentMD5;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "contentRange", {
@@ -18195,7 +21578,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.contentRange;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "contentType", {
@@ -18210,7 +21593,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.contentType;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "copyCompletedOn", {
@@ -18226,7 +21609,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.copyCompletedOn;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "copyId", {
@@ -18241,7 +21624,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.copyId;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "copyProgress", {
@@ -18258,7 +21641,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.copyProgress;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "copySource", {
@@ -18274,7 +21657,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.copySource;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "copyStatus", {
@@ -18290,7 +21673,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.copyStatus;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "copyStatusDescription", {
@@ -18306,7 +21689,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.copyStatusDescription;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "leaseDuration", {
@@ -18322,7 +21705,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.leaseDuration;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "leaseState", {
@@ -18337,7 +21720,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.leaseState;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "leaseStatus", {
@@ -18352,7 +21735,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.leaseStatus;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "date", {
@@ -18367,7 +21750,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.date;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "blobCommittedBlockCount", {
@@ -18382,7 +21765,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.blobCommittedBlockCount;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "etag", {
@@ -18397,7 +21780,21 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.etag;
         },
-        enumerable: true,
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobDownloadResponse.prototype, "tagCount", {
+        /**
+         * The number of tags associated with the blob
+         *
+         * @readonly
+         * @type {(number | undefined)}
+         * @memberof BlobDownloadResponse
+         */
+        get: function () {
+            return this.originalResponse.tagCount;
+        },
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "errorCode", {
@@ -18411,7 +21808,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.errorCode;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "isServerEncrypted", {
@@ -18429,7 +21826,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.isServerEncrypted;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "blobContentMD5", {
@@ -18447,7 +21844,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.blobContentMD5;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "lastModified", {
@@ -18463,7 +21860,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.lastModified;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "metadata", {
@@ -18478,7 +21875,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.metadata;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "requestId", {
@@ -18493,7 +21890,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.requestId;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "clientRequestId", {
@@ -18508,12 +21905,12 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.clientRequestId;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "version", {
         /**
-         * Indicates the version of the File service used
+         * Indicates the version of the Blob service used
          * to execute the request.
          *
          * @readonly
@@ -18523,7 +21920,21 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.version;
         },
-        enumerable: true,
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobDownloadResponse.prototype, "versionId", {
+        /**
+         * Indicates the versionId of the downloaded blob version.
+         *
+         * @readonly
+         * @type {(string | undefined)}
+         * @memberof BlobDownloadResponse
+         */
+        get: function () {
+            return this.originalResponse.versionId;
+        },
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "encryptionKeySha256", {
@@ -18538,7 +21949,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.encryptionKeySha256;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "contentCrc64", {
@@ -18554,7 +21965,49 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.contentCrc64;
         },
-        enumerable: true,
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobDownloadResponse.prototype, "objectReplicationDestinationPolicyId", {
+        /**
+         * Object Replication Policy Id of the destination blob.
+         *
+         * @readonly
+         * @type {(string| undefined)}
+         * @memberof BlobDownloadResponse
+         */
+        get: function () {
+            return this.originalResponse.objectReplicationDestinationPolicyId;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobDownloadResponse.prototype, "objectReplicationSourceProperties", {
+        /**
+         * Parsed Object Replication Policy Id, Rule Id(s) and status of the source blob.
+         *
+         * @readonly
+         * @type {(ObjectReplicationPolicy[] | undefined)}
+         * @memberof BlobDownloadResponse
+         */
+        get: function () {
+            return this.originalResponse.objectReplicationSourceProperties;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobDownloadResponse.prototype, "isSealed", {
+        /**
+         * If this blob has been sealed.
+         *
+         * @readonly
+         * @type {(boolean | undefined)}
+         * @memberof BlobDownloadResponse
+         */
+        get: function () {
+            return this.originalResponse.isSealed;
+        },
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "contentAsBlob", {
@@ -18569,7 +22022,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse.blobBody;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "readableStreamBody", {
@@ -18586,7 +22039,7 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return coreHttp.isNode ? this.blobDownloadStream : undefined;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobDownloadResponse.prototype, "_response", {
@@ -18599,275 +22052,1605 @@ var BlobDownloadResponse = /** @class */ (function () {
         get: function () {
             return this.originalResponse._response;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     return BlobDownloadResponse;
 }());
 
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
-/**
- * Generate a range string. For example:
- *
- * "bytes=255-" or "bytes=0-511"
- *
- * @export
- * @param {Range} iRange
- * @returns {string}
- */
-function rangeToString(iRange) {
-    if (iRange.offset < 0) {
-        throw new RangeError("Range.offset cannot be smaller than 0.");
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+var AVRO_SYNC_MARKER_SIZE = 16;
+var AVRO_INIT_BYTES = new Uint8Array([79, 98, 106, 1]);
+var AVRO_CODEC_KEY = "avro.codec";
+var AVRO_SCHEMA_KEY = "avro.schema";
+
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+function arraysEqual(a, b) {
+    if (a === b)
+        return true;
+    if (a == null || b == null)
+        return false;
+    if (a.length != b.length)
+        return false;
+    for (var i = 0; i < a.length; ++i) {
+        if (a[i] !== b[i])
+            return false;
     }
-    if (iRange.count && iRange.count <= 0) {
-        throw new RangeError("Range.count must be larger than 0. Leave it undefined if you want a range from offset to the end.");
-    }
-    return iRange.count
-        ? "bytes=" + iRange.offset + "-" + (iRange.offset + iRange.count - 1)
-        : "bytes=" + iRange.offset + "-";
+    return true;
 }
 
-// Copyright (c) Microsoft Corporation. All rights reserved.
-(function (BlockBlobTier) {
-    /**
-     * Optmized for storing data that is accessed frequently.
-     */
-    BlockBlobTier["Hot"] = "Hot";
-    /**
-     * Optimized for storing data that is infrequently accessed and stored for at least 30 days.
-     */
-    BlockBlobTier["Cool"] = "Cool";
-    /**
-     * Optimized for storing data that is rarely accessed and stored for at least 180 days
-     * with flexible latency requirements (on the order of hours).
-     */
-    BlockBlobTier["Archive"] = "Archive";
-})(exports.BlockBlobTier || (exports.BlockBlobTier = {}));
-(function (PremiumPageBlobTier) {
-    /**
-     * P4 Tier.
-     */
-    PremiumPageBlobTier["P4"] = "P4";
-    /**
-     * P6 Tier.
-     */
-    PremiumPageBlobTier["P6"] = "P6";
-    /**
-     * P10 Tier.
-     */
-    PremiumPageBlobTier["P10"] = "P10";
-    /**
-     * P15 Tier.
-     */
-    PremiumPageBlobTier["P15"] = "P15";
-    /**
-     * P20 Tier.
-     */
-    PremiumPageBlobTier["P20"] = "P20";
-    /**
-     * P30 Tier.
-     */
-    PremiumPageBlobTier["P30"] = "P30";
-    /**
-     * P40 Tier.
-     */
-    PremiumPageBlobTier["P40"] = "P40";
-    /**
-     * P50 Tier.
-     */
-    PremiumPageBlobTier["P50"] = "P50";
-    /**
-     * P60 Tier.
-     */
-    PremiumPageBlobTier["P60"] = "P60";
-    /**
-     * P70 Tier.
-     */
-    PremiumPageBlobTier["P70"] = "P70";
-    /**
-     * P80 Tier.
-     */
-    PremiumPageBlobTier["P80"] = "P80";
-})(exports.PremiumPageBlobTier || (exports.PremiumPageBlobTier = {}));
-function toAccessTier(tier) {
-    if (tier == undefined) {
-        return undefined;
+// Copyright (c) Microsoft Corporation.
+var AvroParser = /** @class */ (function () {
+    function AvroParser() {
     }
-    return tier; // No more check if string is a valid AccessTier, and left this to underlay logic to decide(service).
-}
-function ensureCpkIfSpecified(cpk, isHttps) {
-    if (cpk && !isHttps) {
-        throw new RangeError("Customer-provided encryption key must be used over HTTPS.");
+    /**
+     * Reads a fixed number of bytes from the stream.
+     *
+     * @static
+     * @param {AvroReadable} [stream]
+     * @param {number} [length]
+     * @param {AvroParserReadOptions} [options={}]
+     * @returns {Promise<Uint8Array>}
+     * @memberof AvroParser
+     */
+    AvroParser.readFixedBytes = function (stream, length, options) {
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var bytes;
+            return tslib.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, stream.read(length, { abortSignal: options.abortSignal })];
+                    case 1:
+                        bytes = _a.sent();
+                        if (bytes.length != length) {
+                            throw new Error("Hit stream end.");
+                        }
+                        return [2 /*return*/, bytes];
+                }
+            });
+        });
+    };
+    /**
+     * Reads a single byte from the stream.
+     *
+     * @static
+     * @param {AvroReadable} [stream]
+     * @param {AvroParserReadOptions} [options={}]
+     * @returns {Promise<number>}
+     * @memberof AvroParser
+     */
+    AvroParser.readByte = function (stream, options) {
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var buf;
+            return tslib.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, AvroParser.readFixedBytes(stream, 1, options)];
+                    case 1:
+                        buf = _a.sent();
+                        return [2 /*return*/, buf[0]];
+                }
+            });
+        });
+    };
+    // int and long are stored in variable-length zig-zag coding.
+    // variable-length: https://lucene.apache.org/core/3_5_0/fileformats.html#VInt
+    // zig-zag: https://developers.google.com/protocol-buffers/docs/encoding?csw=1#types
+    AvroParser.readZigZagLong = function (stream, options) {
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var zigZagEncoded, significanceInBit, byte, haveMoreByte, significanceInFloat, res;
+            return tslib.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        zigZagEncoded = 0;
+                        significanceInBit = 0;
+                        _a.label = 1;
+                    case 1: return [4 /*yield*/, AvroParser.readByte(stream, options)];
+                    case 2:
+                        byte = _a.sent();
+                        haveMoreByte = byte & 0x80;
+                        zigZagEncoded |= (byte & 0x7f) << significanceInBit;
+                        significanceInBit += 7;
+                        _a.label = 3;
+                    case 3:
+                        if (haveMoreByte && significanceInBit < 28) return [3 /*break*/, 1];
+                        _a.label = 4;
+                    case 4:
+                        if (!haveMoreByte) return [3 /*break*/, 9];
+                        // Switch to float arithmetic
+                        zigZagEncoded = zigZagEncoded;
+                        significanceInFloat = 268435456; // 2 ** 28.
+                        _a.label = 5;
+                    case 5: return [4 /*yield*/, AvroParser.readByte(stream, options)];
+                    case 6:
+                        byte = _a.sent();
+                        zigZagEncoded += (byte & 0x7f) * significanceInFloat;
+                        significanceInFloat *= 128; // 2 ** 7
+                        _a.label = 7;
+                    case 7:
+                        if (byte & 0x80) return [3 /*break*/, 5];
+                        _a.label = 8;
+                    case 8:
+                        res = (zigZagEncoded % 2 ? -(zigZagEncoded + 1) : zigZagEncoded) / 2;
+                        if (res < Number.MIN_SAFE_INTEGER || res > Number.MAX_SAFE_INTEGER) {
+                            throw new Error("Integer overflow.");
+                        }
+                        return [2 /*return*/, res];
+                    case 9: return [2 /*return*/, (zigZagEncoded >> 1) ^ -(zigZagEncoded & 1)];
+                }
+            });
+        });
+    };
+    AvroParser.readLong = function (stream, options) {
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            return tslib.__generator(this, function (_a) {
+                return [2 /*return*/, AvroParser.readZigZagLong(stream, options)];
+            });
+        });
+    };
+    AvroParser.readInt = function (stream, options) {
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            return tslib.__generator(this, function (_a) {
+                return [2 /*return*/, AvroParser.readZigZagLong(stream, options)];
+            });
+        });
+    };
+    AvroParser.readNull = function () {
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            return tslib.__generator(this, function (_a) {
+                return [2 /*return*/, null];
+            });
+        });
+    };
+    AvroParser.readBoolean = function (stream, options) {
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var b;
+            return tslib.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, AvroParser.readByte(stream, options)];
+                    case 1:
+                        b = _a.sent();
+                        if (b == 1) {
+                            return [2 /*return*/, true];
+                        }
+                        else if (b == 0) {
+                            return [2 /*return*/, false];
+                        }
+                        else {
+                            throw new Error("Byte was not a boolean.");
+                        }
+                }
+            });
+        });
+    };
+    AvroParser.readFloat = function (stream, options) {
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var u8arr, view;
+            return tslib.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, AvroParser.readFixedBytes(stream, 4, options)];
+                    case 1:
+                        u8arr = _a.sent();
+                        view = new DataView(u8arr.buffer, u8arr.byteOffset, u8arr.byteLength);
+                        return [2 /*return*/, view.getFloat32(0, true)]; // littleEndian = true
+                }
+            });
+        });
+    };
+    AvroParser.readDouble = function (stream, options) {
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var u8arr, view;
+            return tslib.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, AvroParser.readFixedBytes(stream, 8, options)];
+                    case 1:
+                        u8arr = _a.sent();
+                        view = new DataView(u8arr.buffer, u8arr.byteOffset, u8arr.byteLength);
+                        return [2 /*return*/, view.getFloat64(0, true)]; // littleEndian = true
+                }
+            });
+        });
+    };
+    AvroParser.readBytes = function (stream, options) {
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var size;
+            return tslib.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, AvroParser.readLong(stream, options)];
+                    case 1:
+                        size = _a.sent();
+                        if (size < 0) {
+                            throw new Error("Bytes size was negative.");
+                        }
+                        return [4 /*yield*/, stream.read(size, { abortSignal: options.abortSignal })];
+                    case 2: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
+    AvroParser.readString = function (stream, options) {
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var u8arr, utf8decoder;
+            return tslib.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, AvroParser.readBytes(stream, options)];
+                    case 1:
+                        u8arr = _a.sent();
+                        // polyfill TextDecoder to be backward compatible with older
+                        // nodejs that doesn't expose TextDecoder as a global variable
+                        if (typeof TextDecoder === "undefined" && "function" !== "undefined") {
+                            global.TextDecoder = __webpack_require__(669).TextDecoder;
+                        }
+                        utf8decoder = new TextDecoder();
+                        return [2 /*return*/, utf8decoder.decode(u8arr)];
+                }
+            });
+        });
+    };
+    AvroParser.readMapPair = function (stream, readItemMethod, options) {
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var key, value;
+            return tslib.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, AvroParser.readString(stream, options)];
+                    case 1:
+                        key = _a.sent();
+                        return [4 /*yield*/, readItemMethod(stream, options)];
+                    case 2:
+                        value = _a.sent();
+                        return [2 /*return*/, { key: key, value: value }];
+                }
+            });
+        });
+    };
+    AvroParser.readMap = function (stream, readItemMethod, options) {
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var readPairMethod, pairs, dict, _i, pairs_1, pair;
+            var _this = this;
+            return tslib.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        readPairMethod = function (stream, options) {
+                            if (options === void 0) { options = {}; }
+                            return tslib.__awaiter(_this, void 0, void 0, function () {
+                                return tslib.__generator(this, function (_a) {
+                                    switch (_a.label) {
+                                        case 0: return [4 /*yield*/, AvroParser.readMapPair(stream, readItemMethod, options)];
+                                        case 1: return [2 /*return*/, _a.sent()];
+                                    }
+                                });
+                            });
+                        };
+                        return [4 /*yield*/, AvroParser.readArray(stream, readPairMethod, options)];
+                    case 1:
+                        pairs = _a.sent();
+                        dict = {};
+                        for (_i = 0, pairs_1 = pairs; _i < pairs_1.length; _i++) {
+                            pair = pairs_1[_i];
+                            dict[pair.key] = pair.value;
+                        }
+                        return [2 /*return*/, dict];
+                }
+            });
+        });
+    };
+    AvroParser.readArray = function (stream, readItemMethod, options) {
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var items, count, item;
+            return tslib.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        items = [];
+                        return [4 /*yield*/, AvroParser.readLong(stream, options)];
+                    case 1:
+                        count = _a.sent();
+                        _a.label = 2;
+                    case 2:
+                        if (!(count != 0)) return [3 /*break*/, 8];
+                        if (!(count < 0)) return [3 /*break*/, 4];
+                        // Ignore block sizes
+                        return [4 /*yield*/, AvroParser.readLong(stream, options)];
+                    case 3:
+                        // Ignore block sizes
+                        _a.sent();
+                        count = -count;
+                        _a.label = 4;
+                    case 4:
+                        if (!count--) return [3 /*break*/, 6];
+                        return [4 /*yield*/, readItemMethod(stream, options)];
+                    case 5:
+                        item = _a.sent();
+                        items.push(item);
+                        return [3 /*break*/, 4];
+                    case 6: return [4 /*yield*/, AvroParser.readLong(stream, options)];
+                    case 7:
+                        count = _a.sent();
+                        return [3 /*break*/, 2];
+                    case 8: return [2 /*return*/, items];
+                }
+            });
+        });
+    };
+    return AvroParser;
+}());
+var AvroComplex;
+(function (AvroComplex) {
+    AvroComplex["RECORD"] = "record";
+    AvroComplex["ENUM"] = "enum";
+    AvroComplex["ARRAY"] = "array";
+    AvroComplex["MAP"] = "map";
+    AvroComplex["UNION"] = "union";
+    AvroComplex["FIXED"] = "fixed";
+})(AvroComplex || (AvroComplex = {}));
+var AvroType = /** @class */ (function () {
+    function AvroType() {
     }
-    if (cpk && !cpk.encryptionAlgorithm) {
-        cpk.encryptionAlgorithm = EncryptionAlgorithmAES25;
+    /**
+     * Determines the AvroType from the Avro Schema.
+     */
+    AvroType.fromSchema = function (schema) {
+        if (typeof schema == "string") {
+            return AvroType.fromStringSchema(schema);
+        }
+        else if (Array.isArray(schema)) {
+            return AvroType.fromArraySchema(schema);
+        }
+        else {
+            return AvroType.fromObjectSchema(schema);
+        }
+    };
+    AvroType.fromStringSchema = function (schema) {
+        switch (schema) {
+            case AvroPrimitive.NULL:
+            case AvroPrimitive.BOOLEAN:
+            case AvroPrimitive.INT:
+            case AvroPrimitive.LONG:
+            case AvroPrimitive.FLOAT:
+            case AvroPrimitive.DOUBLE:
+            case AvroPrimitive.BYTES:
+            case AvroPrimitive.STRING:
+                return new AvroPrimitiveType(schema);
+            default:
+                throw new Error("Unexpected Avro type " + schema);
+        }
+    };
+    AvroType.fromArraySchema = function (schema) {
+        return new AvroUnionType(schema.map(AvroType.fromSchema));
+    };
+    AvroType.fromObjectSchema = function (schema) {
+        var type = schema.type;
+        // Primitives can be defined as strings or objects
+        try {
+            return AvroType.fromStringSchema(type);
+        }
+        catch (err) { }
+        switch (type) {
+            case AvroComplex.RECORD:
+                if (schema.aliases) {
+                    throw new Error("aliases currently is not supported, schema: " + schema);
+                }
+                if (!schema.name) {
+                    throw new Error("Required attribute 'name' doesn't exist on schema: " + schema);
+                }
+                var fields = {};
+                if (!schema.fields) {
+                    throw new Error("Required attribute 'fields' doesn't exist on schema: " + schema);
+                }
+                for (var _i = 0, _a = schema.fields; _i < _a.length; _i++) {
+                    var field = _a[_i];
+                    fields[field.name] = AvroType.fromSchema(field.type);
+                }
+                return new AvroRecordType(fields, schema.name);
+            case AvroComplex.ENUM:
+                if (schema.aliases) {
+                    throw new Error("aliases currently is not supported, schema: " + schema);
+                }
+                if (!schema.symbols) {
+                    throw new Error("Required attribute 'symbols' doesn't exist on schema: " + schema);
+                }
+                return new AvroEnumType(schema.symbols);
+            case AvroComplex.MAP:
+                if (!schema.values) {
+                    throw new Error("Required attribute 'values' doesn't exist on schema: " + schema);
+                }
+                return new AvroMapType(AvroType.fromSchema(schema.values));
+            case AvroComplex.ARRAY: // Unused today
+            case AvroComplex.FIXED: // Unused today
+            default:
+                throw new Error("Unexpected Avro type " + type + " in " + schema);
+        }
+    };
+    return AvroType;
+}());
+var AvroPrimitive;
+(function (AvroPrimitive) {
+    AvroPrimitive["NULL"] = "null";
+    AvroPrimitive["BOOLEAN"] = "boolean";
+    AvroPrimitive["INT"] = "int";
+    AvroPrimitive["LONG"] = "long";
+    AvroPrimitive["FLOAT"] = "float";
+    AvroPrimitive["DOUBLE"] = "double";
+    AvroPrimitive["BYTES"] = "bytes";
+    AvroPrimitive["STRING"] = "string";
+})(AvroPrimitive || (AvroPrimitive = {}));
+var AvroPrimitiveType = /** @class */ (function (_super) {
+    tslib.__extends(AvroPrimitiveType, _super);
+    function AvroPrimitiveType(primitive) {
+        var _this = _super.call(this) || this;
+        _this._primitive = primitive;
+        return _this;
     }
-}
+    AvroPrimitiveType.prototype.read = function (stream, options) {
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var _a;
+            return tslib.__generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        _a = this._primitive;
+                        switch (_a) {
+                            case AvroPrimitive.NULL: return [3 /*break*/, 1];
+                            case AvroPrimitive.BOOLEAN: return [3 /*break*/, 3];
+                            case AvroPrimitive.INT: return [3 /*break*/, 5];
+                            case AvroPrimitive.LONG: return [3 /*break*/, 7];
+                            case AvroPrimitive.FLOAT: return [3 /*break*/, 9];
+                            case AvroPrimitive.DOUBLE: return [3 /*break*/, 11];
+                            case AvroPrimitive.BYTES: return [3 /*break*/, 13];
+                            case AvroPrimitive.STRING: return [3 /*break*/, 15];
+                        }
+                        return [3 /*break*/, 17];
+                    case 1: return [4 /*yield*/, AvroParser.readNull()];
+                    case 2: return [2 /*return*/, _b.sent()];
+                    case 3: return [4 /*yield*/, AvroParser.readBoolean(stream, options)];
+                    case 4: return [2 /*return*/, _b.sent()];
+                    case 5: return [4 /*yield*/, AvroParser.readInt(stream, options)];
+                    case 6: return [2 /*return*/, _b.sent()];
+                    case 7: return [4 /*yield*/, AvroParser.readLong(stream, options)];
+                    case 8: return [2 /*return*/, _b.sent()];
+                    case 9: return [4 /*yield*/, AvroParser.readFloat(stream, options)];
+                    case 10: return [2 /*return*/, _b.sent()];
+                    case 11: return [4 /*yield*/, AvroParser.readDouble(stream, options)];
+                    case 12: return [2 /*return*/, _b.sent()];
+                    case 13: return [4 /*yield*/, AvroParser.readBytes(stream, options)];
+                    case 14: return [2 /*return*/, _b.sent()];
+                    case 15: return [4 /*yield*/, AvroParser.readString(stream, options)];
+                    case 16: return [2 /*return*/, _b.sent()];
+                    case 17: throw new Error("Unknown Avro Primitive");
+                }
+            });
+        });
+    };
+    return AvroPrimitiveType;
+}(AvroType));
+var AvroEnumType = /** @class */ (function (_super) {
+    tslib.__extends(AvroEnumType, _super);
+    function AvroEnumType(symbols) {
+        var _this = _super.call(this) || this;
+        _this._symbols = symbols;
+        return _this;
+    }
+    AvroEnumType.prototype.read = function (stream, options) {
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var value;
+            return tslib.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, AvroParser.readInt(stream, options)];
+                    case 1:
+                        value = _a.sent();
+                        return [2 /*return*/, this._symbols[value]];
+                }
+            });
+        });
+    };
+    return AvroEnumType;
+}(AvroType));
+var AvroUnionType = /** @class */ (function (_super) {
+    tslib.__extends(AvroUnionType, _super);
+    function AvroUnionType(types) {
+        var _this = _super.call(this) || this;
+        _this._types = types;
+        return _this;
+    }
+    AvroUnionType.prototype.read = function (stream, options) {
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var typeIndex;
+            return tslib.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, AvroParser.readInt(stream, options)];
+                    case 1:
+                        typeIndex = _a.sent();
+                        return [4 /*yield*/, this._types[typeIndex].read(stream, options)];
+                    case 2: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
+    return AvroUnionType;
+}(AvroType));
+var AvroMapType = /** @class */ (function (_super) {
+    tslib.__extends(AvroMapType, _super);
+    function AvroMapType(itemType) {
+        var _this = _super.call(this) || this;
+        _this._itemType = itemType;
+        return _this;
+    }
+    AvroMapType.prototype.read = function (stream, options) {
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var readItemMethod;
+            var _this = this;
+            return tslib.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        readItemMethod = function (s, options) { return tslib.__awaiter(_this, void 0, void 0, function () {
+                            return tslib.__generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0: return [4 /*yield*/, this._itemType.read(s, options)];
+                                    case 1: return [2 /*return*/, _a.sent()];
+                                }
+                            });
+                        }); };
+                        return [4 /*yield*/, AvroParser.readMap(stream, readItemMethod, options)];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
+    return AvroMapType;
+}(AvroType));
+var AvroRecordType = /** @class */ (function (_super) {
+    tslib.__extends(AvroRecordType, _super);
+    function AvroRecordType(fields, name) {
+        var _this = _super.call(this) || this;
+        _this._fields = fields;
+        _this._name = name;
+        return _this;
+    }
+    AvroRecordType.prototype.read = function (stream, options) {
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var record, _a, _b, _i, key, _c, _d;
+            return tslib.__generator(this, function (_e) {
+                switch (_e.label) {
+                    case 0:
+                        record = {};
+                        record["$schema"] = this._name;
+                        _a = [];
+                        for (_b in this._fields)
+                            _a.push(_b);
+                        _i = 0;
+                        _e.label = 1;
+                    case 1:
+                        if (!(_i < _a.length)) return [3 /*break*/, 4];
+                        key = _a[_i];
+                        if (!this._fields.hasOwnProperty(key)) return [3 /*break*/, 3];
+                        _c = record;
+                        _d = key;
+                        return [4 /*yield*/, this._fields[key].read(stream, options)];
+                    case 2:
+                        _c[_d] = _e.sent();
+                        _e.label = 3;
+                    case 3:
+                        _i++;
+                        return [3 /*break*/, 1];
+                    case 4: return [2 /*return*/, record];
+                }
+            });
+        });
+    };
+    return AvroRecordType;
+}(AvroType));
+
+// Copyright (c) Microsoft Corporation.
+var AvroReader = /** @class */ (function () {
+    function AvroReader(dataStream, headerStream, currentBlockOffset, indexWithinCurrentBlock) {
+        this._dataStream = dataStream;
+        this._headerStream = headerStream || dataStream;
+        this._initialized = false;
+        this._blockOffset = currentBlockOffset || 0;
+        this._objectIndex = indexWithinCurrentBlock || 0;
+        this._initialBlockOffset = currentBlockOffset || 0;
+    }
+    Object.defineProperty(AvroReader.prototype, "blockOffset", {
+        get: function () {
+            return this._blockOffset;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(AvroReader.prototype, "objectIndex", {
+        get: function () {
+            return this._objectIndex;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    AvroReader.prototype.initialize = function (options) {
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var header, _a, codec, _b, schema, _c, i;
+            return tslib.__generator(this, function (_d) {
+                switch (_d.label) {
+                    case 0: return [4 /*yield*/, AvroParser.readFixedBytes(this._headerStream, AVRO_INIT_BYTES.length, {
+                            abortSignal: options.abortSignal
+                        })];
+                    case 1:
+                        header = _d.sent();
+                        if (!arraysEqual(header, AVRO_INIT_BYTES)) {
+                            throw new Error("Stream is not an Avro file.");
+                        }
+                        // File metadata is written as if defined by the following map schema:
+                        // { "type": "map", "values": "bytes"}
+                        _a = this;
+                        return [4 /*yield*/, AvroParser.readMap(this._headerStream, AvroParser.readString, {
+                                abortSignal: options.abortSignal
+                            })];
+                    case 2:
+                        // File metadata is written as if defined by the following map schema:
+                        // { "type": "map", "values": "bytes"}
+                        _a._metadata = _d.sent();
+                        codec = this._metadata[AVRO_CODEC_KEY];
+                        if (!(codec == undefined || codec == "null")) {
+                            throw new Error("Codecs are not supported");
+                        }
+                        // The 16-byte, randomly-generated sync marker for this file.
+                        _b = this;
+                        return [4 /*yield*/, AvroParser.readFixedBytes(this._headerStream, AVRO_SYNC_MARKER_SIZE, {
+                                abortSignal: options.abortSignal
+                            })];
+                    case 3:
+                        // The 16-byte, randomly-generated sync marker for this file.
+                        _b._syncMarker = _d.sent();
+                        schema = JSON.parse(this._metadata[AVRO_SCHEMA_KEY]);
+                        this._itemType = AvroType.fromSchema(schema);
+                        if (this._blockOffset == 0) {
+                            this._blockOffset = this._initialBlockOffset + this._dataStream.position;
+                        }
+                        _c = this;
+                        return [4 /*yield*/, AvroParser.readLong(this._dataStream, {
+                                abortSignal: options.abortSignal
+                            })];
+                    case 4:
+                        _c._itemsRemainingInBlock = _d.sent();
+                        // skip block length
+                        return [4 /*yield*/, AvroParser.readLong(this._dataStream, { abortSignal: options.abortSignal })];
+                    case 5:
+                        // skip block length
+                        _d.sent();
+                        this._initialized = true;
+                        if (!(this._objectIndex && this._objectIndex > 0)) return [3 /*break*/, 9];
+                        i = 0;
+                        _d.label = 6;
+                    case 6:
+                        if (!(i < this._objectIndex)) return [3 /*break*/, 9];
+                        return [4 /*yield*/, this._itemType.read(this._dataStream, { abortSignal: options.abortSignal })];
+                    case 7:
+                        _d.sent();
+                        this._itemsRemainingInBlock--;
+                        _d.label = 8;
+                    case 8:
+                        i++;
+                        return [3 /*break*/, 6];
+                    case 9: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    AvroReader.prototype.hasNext = function () {
+        return !this._initialized || this._itemsRemainingInBlock > 0;
+    };
+    AvroReader.prototype.parseObjects = function (options) {
+        if (options === void 0) { options = {}; }
+        return tslib.__asyncGenerator(this, arguments, function parseObjects_1() {
+            var result, marker, _a, err_1;
+            return tslib.__generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        if (!!this._initialized) return [3 /*break*/, 2];
+                        return [4 /*yield*/, tslib.__await(this.initialize(options))];
+                    case 1:
+                        _b.sent();
+                        _b.label = 2;
+                    case 2:
+                        if (!this.hasNext()) return [3 /*break*/, 13];
+                        return [4 /*yield*/, tslib.__await(this._itemType.read(this._dataStream, {
+                                abortSignal: options.abortSignal
+                            }))];
+                    case 3:
+                        result = _b.sent();
+                        this._itemsRemainingInBlock--;
+                        this._objectIndex++;
+                        if (!(this._itemsRemainingInBlock == 0)) return [3 /*break*/, 10];
+                        return [4 /*yield*/, tslib.__await(AvroParser.readFixedBytes(this._dataStream, AVRO_SYNC_MARKER_SIZE, {
+                                abortSignal: options.abortSignal
+                            }))];
+                    case 4:
+                        marker = _b.sent();
+                        this._blockOffset = this._initialBlockOffset + this._dataStream.position;
+                        this._objectIndex = 0;
+                        if (!arraysEqual(this._syncMarker, marker)) {
+                            throw new Error("Stream is not a valid Avro file.");
+                        }
+                        _b.label = 5;
+                    case 5:
+                        _b.trys.push([5, 7, , 8]);
+                        _a = this;
+                        return [4 /*yield*/, tslib.__await(AvroParser.readLong(this._dataStream, {
+                                abortSignal: options.abortSignal
+                            }))];
+                    case 6:
+                        _a._itemsRemainingInBlock = _b.sent();
+                        return [3 /*break*/, 8];
+                    case 7:
+                        err_1 = _b.sent();
+                        // We hit the end of the stream.
+                        this._itemsRemainingInBlock = 0;
+                        return [3 /*break*/, 8];
+                    case 8:
+                        if (!(this._itemsRemainingInBlock > 0)) return [3 /*break*/, 10];
+                        // Ignore block size
+                        return [4 /*yield*/, tslib.__await(AvroParser.readLong(this._dataStream, { abortSignal: options.abortSignal }))];
+                    case 9:
+                        // Ignore block size
+                        _b.sent();
+                        _b.label = 10;
+                    case 10: return [4 /*yield*/, tslib.__await(result)];
+                    case 11: return [4 /*yield*/, _b.sent()];
+                    case 12:
+                        _b.sent();
+                        return [3 /*break*/, 2];
+                    case 13: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    return AvroReader;
+}());
+
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
+var AvroReadable = /** @class */ (function () {
+    function AvroReadable() {
+    }
+    return AvroReadable;
+}());
+
+// Copyright (c) Microsoft Corporation.
+var ABORT_ERROR$1 = new abortController.AbortError("Reading from the avro stream was aborted.");
+var AvroReadableFromStream = /** @class */ (function (_super) {
+    tslib.__extends(AvroReadableFromStream, _super);
+    function AvroReadableFromStream(readable) {
+        var _this = _super.call(this) || this;
+        _this._readable = readable;
+        _this._position = 0;
+        return _this;
+    }
+    AvroReadableFromStream.prototype.toUint8Array = function (data) {
+        if (typeof data === "string") {
+            return Buffer.from(data);
+        }
+        return data;
+    };
+    Object.defineProperty(AvroReadableFromStream.prototype, "position", {
+        get: function () {
+            return this._position;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    AvroReadableFromStream.prototype.read = function (size, options) {
+        var _a;
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var chunk;
+            var _this = this;
+            return tslib.__generator(this, function (_b) {
+                if ((_a = options.abortSignal) === null || _a === void 0 ? void 0 : _a.aborted) {
+                    throw ABORT_ERROR$1;
+                }
+                if (size < 0) {
+                    throw new Error("size parameter should be positive: " + size);
+                }
+                if (size === 0) {
+                    return [2 /*return*/, new Uint8Array()];
+                }
+                if (!this._readable.readable) {
+                    throw new Error("Stream no longer readable.");
+                }
+                chunk = this._readable.read(size);
+                if (chunk) {
+                    this._position += chunk.length;
+                    // chunk.length maybe less than desired size if the stream ends.
+                    return [2 /*return*/, this.toUint8Array(chunk)];
+                }
+                else {
+                    // register callback to wait for enough data to read
+                    return [2 /*return*/, new Promise(function (resolve, reject) {
+                            var cleanUp = function () {
+                                _this._readable.removeListener("readable", readableCallback);
+                                _this._readable.removeListener("error", rejectCallback);
+                                _this._readable.removeListener("end", rejectCallback);
+                                _this._readable.removeListener("close", rejectCallback);
+                                if (options.abortSignal) {
+                                    options.abortSignal.removeEventListener("abort", abortHandler);
+                                }
+                            };
+                            var readableCallback = function () {
+                                var chunk = _this._readable.read(size);
+                                if (chunk) {
+                                    _this._position += chunk.length;
+                                    cleanUp();
+                                    // chunk.length maybe less than desired size if the stream ends.
+                                    resolve(_this.toUint8Array(chunk));
+                                }
+                            };
+                            var rejectCallback = function () {
+                                cleanUp();
+                                reject();
+                            };
+                            var abortHandler = function () {
+                                cleanUp();
+                                reject(ABORT_ERROR$1);
+                            };
+                            _this._readable.on("readable", readableCallback);
+                            _this._readable.once("error", rejectCallback);
+                            _this._readable.once("end", rejectCallback);
+                            _this._readable.once("close", rejectCallback);
+                            if (options.abortSignal) {
+                                options.abortSignal.addEventListener("abort", abortHandler);
+                            }
+                        })];
+                }
+            });
+        });
+    };
+    return AvroReadableFromStream;
+}(AvroReadable));
 
 // Copyright (c) Microsoft Corporation. All rights reserved.
-/**
- * Reads a readable stream into buffer. Fill the buffer from offset to end.
- *
- * @export
- * @param {NodeJS.ReadableStream} stream A Node.js Readable stream
- * @param {Buffer} buffer Buffer to be filled, length must >= offset
- * @param {number} offset From which position in the buffer to be filled, inclusive
- * @param {number} end To which position in the buffer to be filled, exclusive
- * @param {string} [encoding] Encoding of the Readable stream
- * @returns {Promise<void>}
- */
-function streamToBuffer(stream, buffer, offset, end, encoding) {
-    return tslib.__awaiter(this, void 0, void 0, function () {
-        var pos, count;
-        return tslib.__generator(this, function (_a) {
-            pos = 0;
-            count = end - offset;
-            return [2 /*return*/, new Promise(function (resolve, reject) {
-                    stream.on("readable", function () {
-                        if (pos >= count) {
-                            resolve();
-                            return;
-                        }
-                        var chunk = stream.read();
-                        if (!chunk) {
-                            return;
-                        }
-                        if (typeof chunk === "string") {
-                            chunk = Buffer.from(chunk, encoding);
-                        }
-                        // How much data needed in this chunk
-                        var chunkLength = pos + chunk.length > count ? count - pos : chunk.length;
-                        buffer.fill(chunk.slice(0, chunkLength), offset + pos, offset + pos + chunkLength);
-                        pos += chunkLength;
-                    });
-                    stream.on("end", function () {
-                        if (pos < count) {
-                            reject(new Error("Stream drains before getting enough data needed. Data read: " + pos + ", data need: " + count));
-                        }
-                        resolve();
-                    });
-                    stream.on("error", reject);
-                })];
-        });
-    });
-}
-/**
- * Reads a readable stream into buffer entirely.
- *
- * @export
- * @param {NodeJS.ReadableStream} stream A Node.js Readable stream
- * @param {Buffer} buffer Buffer to be filled, length must >= offset
- * @param {string} [encoding] Encoding of the Readable stream
- * @returns {Promise<number>} with the count of bytes read.
- * @throws {RangeError} If buffer size is not big enough.
- */
-function streamToBuffer2(stream, buffer, encoding) {
-    return tslib.__awaiter(this, void 0, void 0, function () {
-        var pos, bufferSize;
-        return tslib.__generator(this, function (_a) {
-            pos = 0;
-            bufferSize = buffer.length;
-            return [2 /*return*/, new Promise(function (resolve, reject) {
-                    stream.on("readable", function () {
-                        var chunk = stream.read();
-                        if (!chunk) {
-                            return;
-                        }
-                        if (typeof chunk === "string") {
-                            chunk = Buffer.from(chunk, encoding);
-                        }
-                        if (pos + chunk.length > bufferSize) {
-                            reject(new Error("Stream exceeds buffer size. Buffer size: " + bufferSize));
-                            return;
-                        }
-                        buffer.fill(chunk, pos, pos + chunk.length);
-                        pos += chunk.length;
-                    });
-                    stream.on("end", function () {
-                        resolve(pos);
-                    });
-                    stream.on("error", reject);
-                })];
-        });
-    });
-}
 /**
  * ONLY AVAILABLE IN NODE.JS RUNTIME.
  *
- * Writes the content of a readstream to a local file. Returns a Promise which is completed after the file handle is closed.
+ * A Node.js BlobQuickQueryStream will internally parse avro data stream for blob query.
  *
- * @export
- * @param {NodeJS.ReadableStream} rs The read stream.
- * @param {string} file Destination file path.
- * @returns {Promise<void>}
+ * @class BlobQuickQueryStream
+ * @extends {Readable}
  */
-function readStreamToLocalFile(rs, file) {
-    return tslib.__awaiter(this, void 0, void 0, function () {
-        return tslib.__generator(this, function (_a) {
-            return [2 /*return*/, new Promise(function (resolve, reject) {
-                    var ws = fs.createWriteStream(file);
-                    rs.on("error", function (err) {
-                        reject(err);
-                    });
-                    ws.on("error", function (err) {
-                        reject(err);
-                    });
-                    ws.on("close", resolve);
-                    rs.pipe(ws);
-                })];
+var BlobQuickQueryStream = /** @class */ (function (_super) {
+    tslib.__extends(BlobQuickQueryStream, _super);
+    /**
+     * Creates an instance of BlobQuickQueryStream.
+     *
+     * @param {NodeJS.ReadableStream} source The current ReadableStream returned from getter
+     * @param {BlobQuickQueryStreamOptions} [options={}]
+     * @memberof BlobQuickQueryStream
+     */
+    function BlobQuickQueryStream(source, options) {
+        if (options === void 0) { options = {}; }
+        var _this = _super.call(this) || this;
+        _this.source = source;
+        _this.onProgress = options.onProgress;
+        _this.onError = options.onError;
+        _this.avroReader = new AvroReader(new AvroReadableFromStream(_this.source));
+        _this.avroIter = _this.avroReader.parseObjects({ abortSignal: options.abortSignal });
+        return _this;
+    }
+    BlobQuickQueryStream.prototype._read = function () {
+        var _this = this;
+        this.readInternal().catch(function (err) {
+            _this.emit("error", err);
         });
-    });
-}
-/**
- * ONLY AVAILABLE IN NODE.JS RUNTIME.
- *
- * Promisified version of fs.stat().
- */
-var fsStat = util.promisify(fs.stat);
+    };
+    BlobQuickQueryStream.prototype.readInternal = function () {
+        var e_1, _a;
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var _b, _c, obj, schema, exit, data, bytesScanned, totalBytes, fatal, name_1, description, position, e_1_1;
+            return tslib.__generator(this, function (_d) {
+                switch (_d.label) {
+                    case 0:
+                        _d.trys.push([0, 5, 6, 11]);
+                        _b = tslib.__asyncValues(this.avroIter);
+                        _d.label = 1;
+                    case 1: return [4 /*yield*/, _b.next()];
+                    case 2:
+                        if (!(_c = _d.sent(), !_c.done)) return [3 /*break*/, 4];
+                        obj = _c.value;
+                        schema = obj.$schema;
+                        if (typeof schema !== "string") {
+                            throw Error("Missing schema in avro record.");
+                        }
+                        exit = false;
+                        switch (schema) {
+                            case "com.microsoft.azure.storage.queryBlobContents.resultData":
+                                data = obj.data;
+                                if (data instanceof Uint8Array === false) {
+                                    throw Error("Invalid data in avro result record.");
+                                }
+                                if (!this.push(Buffer.from(data))) {
+                                    exit = true;
+                                }
+                                break;
+                            case "com.microsoft.azure.storage.queryBlobContents.progress":
+                                bytesScanned = obj.bytesScanned;
+                                if (typeof bytesScanned !== "number") {
+                                    throw Error("Invalid bytesScanned in avro progress record.");
+                                }
+                                if (this.onProgress) {
+                                    this.onProgress({ loadedBytes: bytesScanned });
+                                }
+                                break;
+                            case "com.microsoft.azure.storage.queryBlobContents.end":
+                                if (this.onProgress) {
+                                    totalBytes = obj.totalBytes;
+                                    if (typeof totalBytes !== "number") {
+                                        throw Error("Invalid totalBytes in avro end record.");
+                                    }
+                                    this.onProgress({ loadedBytes: totalBytes });
+                                }
+                                this.push(null);
+                                break;
+                            case "com.microsoft.azure.storage.queryBlobContents.error":
+                                if (this.onError) {
+                                    fatal = obj.fatal;
+                                    if (typeof fatal !== "boolean") {
+                                        throw Error("Invalid fatal in avro error record.");
+                                    }
+                                    name_1 = obj.name;
+                                    if (typeof name_1 !== "string") {
+                                        throw Error("Invalid name in avro error record.");
+                                    }
+                                    description = obj.description;
+                                    if (typeof description !== "string") {
+                                        throw Error("Invalid description in avro error record.");
+                                    }
+                                    position = obj.position;
+                                    if (typeof position !== "number") {
+                                        throw Error("Invalid position in avro error record.");
+                                    }
+                                    this.onError({
+                                        position: position,
+                                        name: name_1,
+                                        isFatal: fatal,
+                                        description: description
+                                    });
+                                }
+                                break;
+                            default:
+                                throw Error("Unknown schema " + schema + " in avro progress record.");
+                        }
+                        if (exit) {
+                            return [3 /*break*/, 4];
+                        }
+                        _d.label = 3;
+                    case 3: return [3 /*break*/, 1];
+                    case 4: return [3 /*break*/, 11];
+                    case 5:
+                        e_1_1 = _d.sent();
+                        e_1 = { error: e_1_1 };
+                        return [3 /*break*/, 11];
+                    case 6:
+                        _d.trys.push([6, , 9, 10]);
+                        if (!(_c && !_c.done && (_a = _b.return))) return [3 /*break*/, 8];
+                        return [4 /*yield*/, _a.call(_b)];
+                    case 7:
+                        _d.sent();
+                        _d.label = 8;
+                    case 8: return [3 /*break*/, 10];
+                    case 9:
+                        if (e_1) throw e_1.error;
+                        return [7 /*endfinally*/];
+                    case 10: return [7 /*endfinally*/];
+                    case 11: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    return BlobQuickQueryStream;
+}(stream.Readable));
 
 // Copyright (c) Microsoft Corporation. All rights reserved.
 /**
- * Credential policy used to sign HTTP(S) requests before sending. This is an
- * abstract class.
+ * ONLY AVAILABLE IN NODE.JS RUNTIME.
+ *
+ * BlobQueryResponse implements BlobDownloadResponseModel interface, and in Node.js runtime it will
+ * parse avor data returned by blob query.
  *
  * @export
- * @abstract
- * @class CredentialPolicy
- * @extends {BaseRequestPolicy}
+ * @class BlobQueryResponse
+ * @implements {BlobDownloadResponseModel}
  */
-var CredentialPolicy = /** @class */ (function (_super) {
-    tslib.__extends(CredentialPolicy, _super);
-    function CredentialPolicy() {
-        return _super !== null && _super.apply(this, arguments) || this;
+var BlobQueryResponse = /** @class */ (function () {
+    /**
+     * Creates an instance of BlobQueryResponse.
+     *
+     * @param {BlobQueryResponseModel} originalResponse
+     * @param {BlobQuickQueryStreamOptions} [options={}]
+     * @memberof BlobQueryResponse
+     */
+    function BlobQueryResponse(originalResponse, options) {
+        if (options === void 0) { options = {}; }
+        this.originalResponse = originalResponse;
+        this.blobDownloadStream = new BlobQuickQueryStream(this.originalResponse.readableStreamBody, options);
     }
-    /**
-     * Sends out request.
-     *
-     * @param {WebResource} request
-     * @returns {Promise<HttpOperationResponse>}
-     * @memberof CredentialPolicy
-     */
-    CredentialPolicy.prototype.sendRequest = function (request) {
-        return this._nextPolicy.sendRequest(this.signRequest(request));
-    };
-    /**
-     * Child classes must implement this method with request signing. This method
-     * will be executed in {@link sendRequest}.
-     *
-     * @protected
-     * @abstract
-     * @param {WebResource} request
-     * @returns {WebResource}
-     * @memberof CredentialPolicy
-     */
-    CredentialPolicy.prototype.signRequest = function (request) {
-        // Child classes must override this method with request signing. This method
-        // will be executed in sendRequest().
-        return request;
-    };
-    return CredentialPolicy;
-}(coreHttp.BaseRequestPolicy));
+    Object.defineProperty(BlobQueryResponse.prototype, "acceptRanges", {
+        /**
+         * Indicates that the service supports
+         * requests for partial file content.
+         *
+         * @readonly
+         * @type {(string | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.acceptRanges;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "cacheControl", {
+        /**
+         * Returns if it was previously specified
+         * for the file.
+         *
+         * @readonly
+         * @type {(string | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.cacheControl;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "contentDisposition", {
+        /**
+         * Returns the value that was specified
+         * for the 'x-ms-content-disposition' header and specifies how to process the
+         * response.
+         *
+         * @readonly
+         * @type {(string | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.contentDisposition;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "contentEncoding", {
+        /**
+         * Returns the value that was specified
+         * for the Content-Encoding request header.
+         *
+         * @readonly
+         * @type {(string | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.contentEncoding;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "contentLanguage", {
+        /**
+         * Returns the value that was specified
+         * for the Content-Language request header.
+         *
+         * @readonly
+         * @type {(string | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.contentLanguage;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "blobSequenceNumber", {
+        /**
+         * The current sequence number for a
+         * page blob. This header is not returned for block blobs or append blobs.
+         *
+         * @readonly
+         * @type {(number | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.blobSequenceNumber;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "blobType", {
+        /**
+         * The blob's type. Possible values include:
+         * 'BlockBlob', 'PageBlob', 'AppendBlob'.
+         *
+         * @readonly
+         * @type {(BlobType | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.blobType;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "contentLength", {
+        /**
+         * The number of bytes present in the
+         * response body.
+         *
+         * @readonly
+         * @type {(number | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.contentLength;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "contentMD5", {
+        /**
+         * If the file has an MD5 hash and the
+         * request is to read the full file, this response header is returned so that
+         * the client can check for message content integrity. If the request is to
+         * read a specified range and the 'x-ms-range-get-content-md5' is set to
+         * true, then the request returns an MD5 hash for the range, as long as the
+         * range size is less than or equal to 4 MB. If neither of these sets of
+         * conditions is true, then no value is returned for the 'Content-MD5'
+         * header.
+         *
+         * @readonly
+         * @type {(Uint8Array | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.contentMD5;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "contentRange", {
+        /**
+         * Indicates the range of bytes returned if
+         * the client requested a subset of the file by setting the Range request
+         * header.
+         *
+         * @readonly
+         * @type {(string | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.contentRange;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "contentType", {
+        /**
+         * The content type specified for the file.
+         * The default content type is 'application/octet-stream'
+         *
+         * @readonly
+         * @type {(string | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.contentType;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "copyCompletedOn", {
+        /**
+         * Conclusion time of the last attempted
+         * Copy File operation where this file was the destination file. This value
+         * can specify the time of a completed, aborted, or failed copy attempt.
+         *
+         * @readonly
+         * @type {(Date | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return undefined;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "copyId", {
+        /**
+         * String identifier for the last attempted Copy
+         * File operation where this file was the destination file.
+         *
+         * @readonly
+         * @type {(string | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.copyId;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "copyProgress", {
+        /**
+         * Contains the number of bytes copied and
+         * the total bytes in the source in the last attempted Copy File operation
+         * where this file was the destination file. Can show between 0 and
+         * Content-Length bytes copied.
+         *
+         * @readonly
+         * @type {(string | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.copyProgress;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "copySource", {
+        /**
+         * URL up to 2KB in length that specifies the
+         * source file used in the last attempted Copy File operation where this file
+         * was the destination file.
+         *
+         * @readonly
+         * @type {(string | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.copySource;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "copyStatus", {
+        /**
+         * State of the copy operation
+         * identified by 'x-ms-copy-id'. Possible values include: 'pending',
+         * 'success', 'aborted', 'failed'
+         *
+         * @readonly
+         * @type {(CopyStatusType | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.copyStatus;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "copyStatusDescription", {
+        /**
+         * Only appears when
+         * x-ms-copy-status is failed or pending. Describes cause of fatal or
+         * non-fatal copy operation failure.
+         *
+         * @readonly
+         * @type {(string | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.copyStatusDescription;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "leaseDuration", {
+        /**
+         * When a blob is leased,
+         * specifies whether the lease is of infinite or fixed duration. Possible
+         * values include: 'infinite', 'fixed'.
+         *
+         * @readonly
+         * @type {(LeaseDurationType | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.leaseDuration;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "leaseState", {
+        /**
+         * Lease state of the blob. Possible
+         * values include: 'available', 'leased', 'expired', 'breaking', 'broken'.
+         *
+         * @readonly
+         * @type {(LeaseStateType | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.leaseState;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "leaseStatus", {
+        /**
+         * The current lease status of the
+         * blob. Possible values include: 'locked', 'unlocked'.
+         *
+         * @readonly
+         * @type {(LeaseStatusType | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.leaseStatus;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "date", {
+        /**
+         * A UTC date/time value generated by the service that
+         * indicates the time at which the response was initiated.
+         *
+         * @readonly
+         * @type {(Date | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.date;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "blobCommittedBlockCount", {
+        /**
+         * The number of committed blocks
+         * present in the blob. This header is returned only for append blobs.
+         *
+         * @readonly
+         * @type {(number | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.blobCommittedBlockCount;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "etag", {
+        /**
+         * The ETag contains a value that you can use to
+         * perform operations conditionally, in quotes.
+         *
+         * @readonly
+         * @type {(string | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.etag;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "errorCode", {
+        /**
+         * The error code.
+         *
+         * @readonly
+         * @type {(string | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.errorCode;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "isServerEncrypted", {
+        /**
+         * The value of this header is set to
+         * true if the file data and application metadata are completely encrypted
+         * using the specified algorithm. Otherwise, the value is set to false (when
+         * the file is unencrypted, or if only parts of the file/application metadata
+         * are encrypted).
+         *
+         * @readonly
+         * @type {(boolean | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.isServerEncrypted;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "blobContentMD5", {
+        /**
+         * If the blob has a MD5 hash, and if
+         * request contains range header (Range or x-ms-range), this response header
+         * is returned with the value of the whole blob's MD5 value. This value may
+         * or may not be equal to the value returned in Content-MD5 header, with the
+         * latter calculated from the requested range.
+         *
+         * @readonly
+         * @type {(Uint8Array | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.blobContentMD5;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "lastModified", {
+        /**
+         * Returns the date and time the file was last
+         * modified. Any operation that modifies the file or its properties updates
+         * the last modified time.
+         *
+         * @readonly
+         * @type {(Date | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.lastModified;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "metadata", {
+        /**
+         * A name-value pair
+         * to associate with a file storage object.
+         *
+         * @readonly
+         * @type {(Metadata | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.metadata;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "requestId", {
+        /**
+         * This header uniquely identifies the request
+         * that was made and can be used for troubleshooting the request.
+         *
+         * @readonly
+         * @type {(string | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.requestId;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "clientRequestId", {
+        /**
+         * If a client request id header is sent in the request, this header will be present in the
+         * response with the same value.
+         *
+         * @readonly
+         * @type {(string | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.clientRequestId;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "version", {
+        /**
+         * Indicates the version of the File service used
+         * to execute the request.
+         *
+         * @readonly
+         * @type {(string | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.version;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "encryptionKeySha256", {
+        /**
+         * The SHA-256 hash of the encryption key used to encrypt the blob. This value is only returned
+         * when the blob was encrypted with a customer-provided key.
+         *
+         * @readonly
+         * @type {(string | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.encryptionKeySha256;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "contentCrc64", {
+        /**
+         * If the request is to read a specified range and the x-ms-range-get-content-crc64 is set to
+         * true, then the request returns a crc64 for the range, as long as the range size is less than
+         * or equal to 4 MB. If both x-ms-range-get-content-crc64 & x-ms-range-get-content-md5 is
+         * specified in the same request, it will fail with 400(Bad Request)
+         *
+         * @type {(Uint8Array | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse.contentCrc64;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "blobBody", {
+        /**
+         * The response body as a browser Blob.
+         * Always undefined in node.js.
+         *
+         * @readonly
+         * @type {(Promise<Blob> | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return undefined;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "readableStreamBody", {
+        /**
+         * The response body as a node.js Readable stream.
+         * Always undefined in the browser.
+         *
+         * It will parse avor data returned by blob query.
+         *
+         * @readonly
+         * @type {(NodeJS.ReadableStream | undefined)}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return coreHttp.isNode ? this.blobDownloadStream : undefined;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(BlobQueryResponse.prototype, "_response", {
+        /**
+         * The HTTP response.
+         *
+         * @type {HttpResponse}
+         * @memberof BlobQueryResponse
+         */
+        get: function () {
+            return this.originalResponse._response;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    return BlobQueryResponse;
+}());
 
 // Copyright (c) Microsoft Corporation. All rights reserved.
 /**
@@ -18923,12 +23706,6 @@ var StorageSharedKeyCredentialPolicy = /** @class */ (function (_super) {
             this.getCanonicalizedResourceString(request);
         var signature = this.factory.computeHMACSHA256(stringToSign);
         request.headers.set(HeaderConstants.AUTHORIZATION, "SharedKey " + this.factory.accountName + ":" + signature);
-        // Workaround for https://github.com/axios/axios/issues/2107
-        // We should always keep the 'content-length' header once the issue is solved
-        // For a better explanation about this workaround, look here: https://github.com/Azure/azure-sdk-for-js/pull/3273
-        if (typeof request.body !== "function" && !(request.body && request.onUploadProgress)) {
-            request.headers.remove(HeaderConstants.CONTENT_LENGTH);
-        }
         // console.log(`[URL]:${request.url}`);
         // console.log(`[HEADERS]:${request.headers.toString()}`);
         // console.log(`[STRING TO SIGN]:${JSON.stringify(stringToSign)}`);
@@ -19031,37 +23808,6 @@ var StorageSharedKeyCredentialPolicy = /** @class */ (function (_super) {
 }(CredentialPolicy));
 
 // Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License.
-/**
- * Credential is an abstract class for Azure Storage HTTP requests signing. This
- * class will host an credentialPolicyCreator factory which generates CredentialPolicy.
- *
- * @export
- * @abstract
- * @class Credential
- */
-var Credential = /** @class */ (function () {
-    function Credential() {
-    }
-    /**
-     * Creates a RequestPolicy object.
-     *
-     * @param {RequestPolicy} _nextPolicy
-     * @param {RequestPolicyOptions} _options
-     * @returns {RequestPolicy}
-     * @memberof Credential
-     */
-    Credential.prototype.create = function (
-    // tslint:disable-next-line:variable-name
-    _nextPolicy, 
-    // tslint:disable-next-line:variable-name
-    _options) {
-        throw new Error("Method should be implemented in children classes.");
-    };
-    return Credential;
-}());
-
-// Copyright (c) Microsoft Corporation. All rights reserved.
 /**
  * ONLY AVAILABLE IN NODE.JS RUNTIME.
  *
@@ -19111,252 +23857,6 @@ var StorageSharedKeyCredential = /** @class */ (function (_super) {
     return StorageSharedKeyCredential;
 }(Credential));
 
-// Copyright (c) Microsoft Corporation. All rights reserved.
-/**
- * AnonymousCredentialPolicy is used with HTTP(S) requests that read public resources
- * or for use with Shared Access Signatures (SAS).
- *
- * @export
- * @class AnonymousCredentialPolicy
- * @extends {CredentialPolicy}
- */
-var AnonymousCredentialPolicy = /** @class */ (function (_super) {
-    tslib.__extends(AnonymousCredentialPolicy, _super);
-    /**
-     * Creates an instance of AnonymousCredentialPolicy.
-     * @param {RequestPolicy} nextPolicy
-     * @param {RequestPolicyOptions} options
-     * @memberof AnonymousCredentialPolicy
-     */
-    function AnonymousCredentialPolicy(nextPolicy, options) {
-        return _super.call(this, nextPolicy, options) || this;
-    }
-    return AnonymousCredentialPolicy;
-}(CredentialPolicy));
-
-// Copyright (c) Microsoft Corporation. All rights reserved.
-/**
- * AnonymousCredential provides a credentialPolicyCreator member used to create
- * AnonymousCredentialPolicy objects. AnonymousCredentialPolicy is used with
- * HTTP(S) requests that read public resources or for use with Shared Access
- * Signatures (SAS).
- *
- * @export
- * @class AnonymousCredential
- * @extends {Credential}
- */
-var AnonymousCredential = /** @class */ (function (_super) {
-    tslib.__extends(AnonymousCredential, _super);
-    function AnonymousCredential() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    /**
-     * Creates an {@link AnonymousCredentialPolicy} object.
-     *
-     * @param {RequestPolicy} nextPolicy
-     * @param {RequestPolicyOptions} options
-     * @returns {AnonymousCredentialPolicy}
-     * @memberof AnonymousCredential
-     */
-    AnonymousCredential.prototype.create = function (nextPolicy, options) {
-        return new AnonymousCredentialPolicy(nextPolicy, options);
-    };
-    return AnonymousCredential;
-}(Credential));
-
-// Copyright (c) Microsoft Corporation. All rights reserved.
-/**
- * States for Batch.
- *
- * @enum {number}
- */
-var BatchStates;
-(function (BatchStates) {
-    BatchStates[BatchStates["Good"] = 0] = "Good";
-    BatchStates[BatchStates["Error"] = 1] = "Error";
-})(BatchStates || (BatchStates = {}));
-/**
- * Batch provides basic parallel execution with concurrency limits.
- * Will stop execute left operations when one of the executed operation throws an error.
- * But Batch cannot cancel ongoing operations, you need to cancel them by yourself.
- *
- * @export
- * @class Batch
- */
-var Batch = /** @class */ (function () {
-    /**
-     * Creates an instance of Batch.
-     * @param {number} [concurrency=5]
-     * @memberof Batch
-     */
-    function Batch(concurrency) {
-        if (concurrency === void 0) { concurrency = 5; }
-        /**
-         * Number of active operations under execution.
-         *
-         * @private
-         * @type {number}
-         * @memberof Batch
-         */
-        this.actives = 0;
-        /**
-         * Number of completed operations under execution.
-         *
-         * @private
-         * @type {number}
-         * @memberof Batch
-         */
-        this.completed = 0;
-        /**
-         * Offset of next operation to be executed.
-         *
-         * @private
-         * @type {number}
-         * @memberof Batch
-         */
-        this.offset = 0;
-        /**
-         * Operation array to be executed.
-         *
-         * @private
-         * @type {Operation[]}
-         * @memberof Batch
-         */
-        this.operations = [];
-        /**
-         * States of Batch. When an error happens, state will turn into error.
-         * Batch will stop execute left operations.
-         *
-         * @private
-         * @type {BatchStates}
-         * @memberof Batch
-         */
-        this.state = BatchStates.Good;
-        if (concurrency < 1) {
-            throw new RangeError("concurrency must be larger than 0");
-        }
-        this.concurrency = concurrency;
-        this.emitter = new events.EventEmitter();
-    }
-    /**
-     * Add a operation into queue.
-     *
-     * @param {Operation} operation
-     * @memberof Batch
-     */
-    Batch.prototype.addOperation = function (operation) {
-        var _this = this;
-        this.operations.push(function () { return tslib.__awaiter(_this, void 0, void 0, function () {
-            var error_1;
-            return tslib.__generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        this.actives++;
-                        return [4 /*yield*/, operation()];
-                    case 1:
-                        _a.sent();
-                        this.actives--;
-                        this.completed++;
-                        this.parallelExecute();
-                        return [3 /*break*/, 3];
-                    case 2:
-                        error_1 = _a.sent();
-                        this.emitter.emit("error", error_1);
-                        return [3 /*break*/, 3];
-                    case 3: return [2 /*return*/];
-                }
-            });
-        }); });
-    };
-    /**
-     * Start execute operations in the queue.
-     *
-     * @returns {Promise<void>}
-     * @memberof Batch
-     */
-    Batch.prototype.do = function () {
-        return tslib.__awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            return tslib.__generator(this, function (_a) {
-                if (this.operations.length === 0) {
-                    return [2 /*return*/, Promise.resolve()];
-                }
-                this.parallelExecute();
-                return [2 /*return*/, new Promise(function (resolve, reject) {
-                        _this.emitter.on("finish", resolve);
-                        _this.emitter.on("error", function (error) {
-                            _this.state = BatchStates.Error;
-                            reject(error);
-                        });
-                    })];
-            });
-        });
-    };
-    /**
-     * Get next operation to be executed. Return null when reaching ends.
-     *
-     * @private
-     * @returns {(Operation | null)}
-     * @memberof Batch
-     */
-    Batch.prototype.nextOperation = function () {
-        if (this.offset < this.operations.length) {
-            return this.operations[this.offset++];
-        }
-        return null;
-    };
-    /**
-     * Start execute operations. One one the most important difference between
-     * this method with do() is that do() wraps as an sync method.
-     *
-     * @private
-     * @returns {void}
-     * @memberof Batch
-     */
-    Batch.prototype.parallelExecute = function () {
-        if (this.state === BatchStates.Error) {
-            return;
-        }
-        if (this.completed >= this.operations.length) {
-            this.emitter.emit("finish");
-            return;
-        }
-        while (this.actives < this.concurrency) {
-            var operation = this.nextOperation();
-            if (operation) {
-                operation();
-            }
-            else {
-                return;
-            }
-        }
-    };
-    return Batch;
-}());
-
-// Copyright (c) Microsoft Corporation.
-/**
- * Creates a span using the global tracer.
- * @param name The name of the operation being performed.
- * @param tracingOptions The options for the underlying http request.
- */
-function createSpan(operationName, tracingOptions) {
-    if (tracingOptions === void 0) { tracingOptions = {}; }
-    var tracer = coreTracing.getTracer();
-    var spanOptions = tslib.__assign(tslib.__assign({}, tracingOptions.spanOptions), { kind: api.SpanKind.INTERNAL });
-    var span = tracer.startSpan("Azure.Storage.Blob." + operationName, spanOptions);
-    span.setAttribute("az.namespace", "Microsoft.Storage");
-    var newOptions = tracingOptions.spanOptions || {};
-    if (span.isRecording()) {
-        newOptions = tslib.__assign(tslib.__assign({}, tracingOptions.spanOptions), { parent: span.context(), attributes: tslib.__assign(tslib.__assign({}, spanOptions.attributes), { "az.namespace": "Microsoft.Storage" }) });
-    }
-    return {
-        span: span,
-        spanOptions: newOptions
-    };
-}
-
 /*
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for
@@ -19367,7 +23867,7 @@ function createSpan(operationName, tracingOptions) {
  * regenerated.
  */
 var packageName = "azure-storage-blob";
-var packageVersion = "12.1.2";
+var packageVersion = "12.2.1";
 var StorageClientContext = /** @class */ (function (_super) {
     tslib.__extends(StorageClientContext, _super);
     /**
@@ -19389,7 +23889,7 @@ var StorageClientContext = /** @class */ (function (_super) {
             options.userAgent = packageName + "/" + packageVersion + " " + defaultUserAgent;
         }
         _this = _super.call(this, undefined, options) || this;
-        _this.version = '2019-07-07';
+        _this.version = "2019-12-12";
         _this.baseUri = "{url}";
         _this.requestContentType = "application/json; charset=utf-8";
         _this.url = url;
@@ -19399,389 +23899,81 @@ var StorageClientContext = /** @class */ (function (_super) {
 }(coreHttp.ServiceClient));
 
 // Copyright (c) Microsoft Corporation. All rights reserved.
-/**
- * A StorageClient represents a based URL class for {@link BlobServiceClient}, {@link ContainerClient}
- * and etc.
- *
- * @export
- * @class StorageClient
- */
-var StorageClient = /** @class */ (function () {
+(function (BlockBlobTier) {
     /**
-     * Creates an instance of StorageClient.
-     * @param {string} url url to resource
-     * @param {Pipeline} pipeline request policy pipeline.
-     * @memberof StorageClient
+     * Optimized for storing data that is accessed frequently.
      */
-    function StorageClient(url, pipeline) {
-        // URL should be encoded and only once, protocol layer shouldn't encode URL again
-        this.url = escapeURLPath(url);
-        this.accountName = getAccountNameFromUrl(url);
-        this.pipeline = pipeline;
-        this.storageClientContext = new StorageClientContext(this.url, pipeline.toServiceClientOptions());
-        this.isHttps = iEqual(getURLScheme(this.url) || "", "https");
-        this.credential = new AnonymousCredential();
-        for (var _i = 0, _a = this.pipeline.factories; _i < _a.length; _i++) {
-            var factory = _a[_i];
-            if ((coreHttp.isNode && factory instanceof StorageSharedKeyCredential) ||
-                factory instanceof AnonymousCredential ||
-                coreHttp.isTokenCredential(factory)) {
-                this.credential = factory;
-            }
-        }
-        // Override protocol layer's default content-type
-        var storageClientContext = this.storageClientContext;
-        storageClientContext.requestContentType = undefined;
+    BlockBlobTier["Hot"] = "Hot";
+    /**
+     * Optimized for storing data that is infrequently accessed and stored for at least 30 days.
+     */
+    BlockBlobTier["Cool"] = "Cool";
+    /**
+     * Optimized for storing data that is rarely accessed and stored for at least 180 days
+     * with flexible latency requirements (on the order of hours).
+     */
+    BlockBlobTier["Archive"] = "Archive";
+})(exports.BlockBlobTier || (exports.BlockBlobTier = {}));
+(function (PremiumPageBlobTier) {
+    /**
+     * P4 Tier.
+     */
+    PremiumPageBlobTier["P4"] = "P4";
+    /**
+     * P6 Tier.
+     */
+    PremiumPageBlobTier["P6"] = "P6";
+    /**
+     * P10 Tier.
+     */
+    PremiumPageBlobTier["P10"] = "P10";
+    /**
+     * P15 Tier.
+     */
+    PremiumPageBlobTier["P15"] = "P15";
+    /**
+     * P20 Tier.
+     */
+    PremiumPageBlobTier["P20"] = "P20";
+    /**
+     * P30 Tier.
+     */
+    PremiumPageBlobTier["P30"] = "P30";
+    /**
+     * P40 Tier.
+     */
+    PremiumPageBlobTier["P40"] = "P40";
+    /**
+     * P50 Tier.
+     */
+    PremiumPageBlobTier["P50"] = "P50";
+    /**
+     * P60 Tier.
+     */
+    PremiumPageBlobTier["P60"] = "P60";
+    /**
+     * P70 Tier.
+     */
+    PremiumPageBlobTier["P70"] = "P70";
+    /**
+     * P80 Tier.
+     */
+    PremiumPageBlobTier["P80"] = "P80";
+})(exports.PremiumPageBlobTier || (exports.PremiumPageBlobTier = {}));
+function toAccessTier(tier) {
+    if (tier == undefined) {
+        return undefined;
     }
-    return StorageClient;
-}());
-
-// Copyright (c) Microsoft Corporation. All rights reserved.
-/**
- * This class accepts a Node.js Readable stream as input, and keeps reading data
- * from the stream into the internal buffer structure, until it reaches maxBuffers.
- * Every available buffer will try to trigger outgoingHandler.
- *
- * The internal buffer structure includes an incoming buffer array, and a outgoing
- * buffer array. The incoming buffer array includes the "empty" buffers can be filled
- * with new incoming data. The outgoing array includes the filled buffers to be
- * handled by outgoingHandler. Every above buffer size is defined by parameter bufferSize.
- *
- * NUM_OF_ALL_BUFFERS = BUFFERS_IN_INCOMING + BUFFERS_IN_OUTGOING + BUFFERS_UNDER_HANDLING
- *
- * NUM_OF_ALL_BUFFERS <= maxBuffers
- *
- * PERFORMANCE IMPROVEMENT TIPS:
- * 1. Input stream highWaterMark is better to set a same value with bufferSize
- *    parameter, which will avoid Buffer.concat() operations.
- * 2. concurrency should set a smaller value than maxBuffers, which is helpful to
- *    reduce the possibility when a outgoing handler waits for the stream data.
- *    in this situation, outgoing handlers are blocked.
- *    Outgoing queue shouldn't be empty.
- * @export
- * @class BufferScheduler
- */
-var BufferScheduler = /** @class */ (function () {
-    /**
-     * Creates an instance of BufferScheduler.
-     *
-     * @param {Readable} readable A Node.js Readable stream
-     * @param {number} bufferSize Buffer size of every maintained buffer
-     * @param {number} maxBuffers How many buffers can be allocated
-     * @param {OutgoingHandler} outgoingHandler An async function scheduled to be
-     *                                          triggered when a buffer fully filled
-     *                                          with stream data
-     * @param {number} concurrency Concurrency of executing outgoingHandlers (>0)
-     * @param {string} [encoding] [Optional] Encoding of Readable stream when it's a string stream
-     * @memberof BufferScheduler
-     */
-    function BufferScheduler(readable, bufferSize, maxBuffers, outgoingHandler, concurrency, encoding) {
-        /**
-         * An internal event emitter.
-         *
-         * @private
-         * @type {EventEmitter}
-         * @memberof BufferScheduler
-         */
-        this.emitter = new events.EventEmitter();
-        /**
-         * An internal offset marker to track data offset in bytes of next outgoingHandler.
-         *
-         * @private
-         * @type {number}
-         * @memberof BufferScheduler
-         */
-        this.offset = 0;
-        /**
-         * An internal marker to track whether stream is end.
-         *
-         * @private
-         * @type {boolean}
-         * @memberof BufferScheduler
-         */
-        this.isStreamEnd = false;
-        /**
-         * An internal marker to track whether stream or outgoingHandler returns error.
-         *
-         * @private
-         * @type {boolean}
-         * @memberof BufferScheduler
-         */
-        this.isError = false;
-        /**
-         * How many handlers are executing.
-         *
-         * @private
-         * @type {number}
-         * @memberof BufferScheduler
-         */
-        this.executingOutgoingHandlers = 0;
-        /**
-         * How many buffers have been allocated.
-         *
-         * @private
-         * @type {number}
-         * @memberof BufferScheduler
-         */
-        this.numBuffers = 0;
-        /**
-         * Because this class doesn't know how much data every time stream pops, which
-         * is defined by highWaterMarker of the stream. So BufferScheduler will cache
-         * data received from the stream, when data in unresolvedDataArray exceeds the
-         * blockSize defined, it will try to concat a blockSize of buffer, fill into available
-         * buffers from incoming and push to outgoing array.
-         *
-         * @private
-         * @type {Buffer[]}
-         * @memberof BufferScheduler
-         */
-        this.unresolvedDataArray = [];
-        /**
-         * How much data consisted in unresolvedDataArray.
-         *
-         * @private
-         * @type {number}
-         * @memberof BufferScheduler
-         */
-        this.unresolvedLength = 0;
-        /**
-         * The array includes all the available buffers can be used to fill data from stream.
-         *
-         * @private
-         * @type {Buffer[]}
-         * @memberof BufferScheduler
-         */
-        this.incoming = [];
-        /**
-         * The array (queue) includes all the buffers filled from stream data.
-         *
-         * @private
-         * @type {Buffer[]}
-         * @memberof BufferScheduler
-         */
-        this.outgoing = [];
-        if (bufferSize <= 0) {
-            throw new RangeError("bufferSize must be larger than 0, current is " + bufferSize);
-        }
-        if (maxBuffers <= 0) {
-            throw new RangeError("maxBuffers must be larger than 0, current is " + maxBuffers);
-        }
-        if (concurrency <= 0) {
-            throw new RangeError("concurrency must be larger than 0, current is " + concurrency);
-        }
-        this.bufferSize = bufferSize;
-        this.maxBuffers = maxBuffers;
-        this.readable = readable;
-        this.outgoingHandler = outgoingHandler;
-        this.concurrency = concurrency;
-        this.encoding = encoding;
+    return tier; // No more check if string is a valid AccessTier, and left this to underlay logic to decide(service).
+}
+function ensureCpkIfSpecified(cpk, isHttps) {
+    if (cpk && !isHttps) {
+        throw new RangeError("Customer-provided encryption key must be used over HTTPS.");
     }
-    /**
-     * Start the scheduler, will return error when stream of any of the outgoingHandlers
-     * returns error.
-     *
-     * @returns {Promise<void>}
-     * @memberof BufferScheduler
-     */
-    BufferScheduler.prototype.do = function () {
-        return tslib.__awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            return tslib.__generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) {
-                        _this.readable.on("data", function (data) {
-                            data = typeof data === "string" ? Buffer.from(data, _this.encoding) : data;
-                            _this.appendUnresolvedData(data);
-                            if (!_this.resolveData()) {
-                                _this.readable.pause();
-                            }
-                        });
-                        _this.readable.on("error", function (err) {
-                            _this.emitter.emit("error", err);
-                        });
-                        _this.readable.on("end", function () {
-                            _this.isStreamEnd = true;
-                            _this.emitter.emit("checkEnd");
-                        });
-                        _this.emitter.on("error", function (err) {
-                            _this.isError = true;
-                            _this.readable.pause();
-                            reject(err);
-                        });
-                        _this.emitter.on("checkEnd", function () {
-                            if (_this.outgoing.length > 0) {
-                                _this.triggerOutgoingHandlers();
-                                return;
-                            }
-                            if (_this.isStreamEnd && _this.executingOutgoingHandlers === 0) {
-                                if (_this.unresolvedLength > 0 && _this.unresolvedLength < _this.bufferSize) {
-                                    _this.outgoingHandler(_this.shiftBufferFromUnresolvedDataArray(), _this.offset)
-                                        .then(resolve)
-                                        .catch(reject);
-                                }
-                                else if (_this.unresolvedLength >= _this.bufferSize) {
-                                    return;
-                                }
-                                else {
-                                    resolve();
-                                }
-                            }
-                        });
-                    })];
-            });
-        });
-    };
-    /**
-     * Insert a new data into unresolved array.
-     *
-     * @private
-     * @param {Buffer} data
-     * @memberof BufferScheduler
-     */
-    BufferScheduler.prototype.appendUnresolvedData = function (data) {
-        this.unresolvedDataArray.push(data);
-        this.unresolvedLength += data.length;
-    };
-    /**
-     * Try to shift a buffer with size in blockSize. The buffer returned may be less
-     * than blockSize when data in unresolvedDataArray is less than bufferSize.
-     *
-     * @private
-     * @returns {Buffer}
-     * @memberof BufferScheduler
-     */
-    BufferScheduler.prototype.shiftBufferFromUnresolvedDataArray = function () {
-        if (this.unresolvedLength >= this.bufferSize) {
-            if (this.bufferSize === this.unresolvedDataArray[0].length) {
-                this.unresolvedLength -= this.bufferSize;
-                return this.unresolvedDataArray.shift();
-            }
-            // Lazy concat because Buffer.concat highly drops performance
-            var merged = Buffer.concat(this.unresolvedDataArray, this.unresolvedLength);
-            var buffer = merged.slice(0, this.bufferSize);
-            merged = merged.slice(this.bufferSize);
-            this.unresolvedDataArray = [merged];
-            this.unresolvedLength -= buffer.length;
-            return buffer;
-        }
-        else if (this.unresolvedLength > 0) {
-            var merged = Buffer.concat(this.unresolvedDataArray, this.unresolvedLength);
-            this.unresolvedDataArray = [];
-            this.unresolvedLength = 0;
-            return merged;
-        }
-        else {
-            return Buffer.allocUnsafe(0);
-        }
-    };
-    /**
-     * Resolve data in unresolvedDataArray. For every buffer with size in blockSize
-     * shifted, it will try to get (or allocate a buffer) from incoming, and fill it,
-     * then push it into outgoing to be handled by outgoing handler.
-     *
-     * Return false when available buffers in incoming are not enough, else true.
-     *
-     * @private
-     * @returns {boolean} Return false when buffers in incoming are not enough, else true.
-     * @memberof BufferScheduler
-     */
-    BufferScheduler.prototype.resolveData = function () {
-        while (this.unresolvedLength >= this.bufferSize) {
-            var buffer = void 0;
-            if (this.incoming.length > 0) {
-                buffer = this.incoming.shift();
-            }
-            else {
-                if (this.numBuffers < this.maxBuffers) {
-                    buffer = Buffer.allocUnsafe(this.bufferSize);
-                    this.numBuffers++;
-                }
-                else {
-                    // No available buffer, wait for buffer returned
-                    return false;
-                }
-            }
-            buffer.fill(this.shiftBufferFromUnresolvedDataArray());
-            this.outgoing.push(buffer);
-            this.triggerOutgoingHandlers();
-        }
-        return true;
-    };
-    /**
-     * Try to trigger a outgoing handler for every buffer in outgoing. Stop when
-     * concurrency reaches.
-     *
-     * @private
-     * @memberof BufferScheduler
-     */
-    BufferScheduler.prototype.triggerOutgoingHandlers = function () {
-        return tslib.__awaiter(this, void 0, void 0, function () {
-            var buffer;
-            return tslib.__generator(this, function (_a) {
-                do {
-                    if (this.executingOutgoingHandlers >= this.concurrency) {
-                        return [2 /*return*/];
-                    }
-                    buffer = this.outgoing.shift();
-                    if (buffer) {
-                        this.triggerOutgoingHandler(buffer);
-                    }
-                } while (buffer);
-                return [2 /*return*/];
-            });
-        });
-    };
-    /**
-     * Trigger a outgoing handler for a buffer shifted from outgoing.
-     *
-     * @private
-     * @param {Buffer} buffer
-     * @returns {Promise<any>}
-     * @memberof BufferScheduler
-     */
-    BufferScheduler.prototype.triggerOutgoingHandler = function (buffer) {
-        return tslib.__awaiter(this, void 0, void 0, function () {
-            var bufferLength, err_1;
-            return tslib.__generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        bufferLength = buffer.length;
-                        this.executingOutgoingHandlers++;
-                        this.offset += bufferLength;
-                        _a.label = 1;
-                    case 1:
-                        _a.trys.push([1, 3, , 4]);
-                        return [4 /*yield*/, this.outgoingHandler(buffer, this.offset - bufferLength)];
-                    case 2:
-                        _a.sent();
-                        return [3 /*break*/, 4];
-                    case 3:
-                        err_1 = _a.sent();
-                        this.emitter.emit("error", err_1);
-                        return [2 /*return*/];
-                    case 4:
-                        this.executingOutgoingHandlers--;
-                        this.reuseBuffer(buffer);
-                        this.emitter.emit("checkEnd");
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    /**
-     * Return buffer used by outgoing handler into incoming.
-     *
-     * @private
-     * @param {Buffer} buffer
-     * @memberof BufferScheduler
-     */
-    BufferScheduler.prototype.reuseBuffer = function (buffer) {
-        this.incoming.push(buffer);
-        if (!this.isError && this.resolveData() && !this.isStreamEnd) {
-            this.readable.resume();
-        }
-    };
-    return BufferScheduler;
-}());
+    if (cpk && !cpk.encryptionAlgorithm) {
+        cpk.encryptionAlgorithm = EncryptionAlgorithmAES25;
+    }
+}
 
 /**
  * Function that converts PageRange and ClearRange to a common Range object.
@@ -19965,6 +24157,906 @@ function makeBlobBeginCopyFromURLPollOperation(state) {
 }
 
 // Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+/**
+ * Generate a range string. For example:
+ *
+ * "bytes=255-" or "bytes=0-511"
+ *
+ * @export
+ * @param {Range} iRange
+ * @returns {string}
+ */
+function rangeToString(iRange) {
+    if (iRange.offset < 0) {
+        throw new RangeError("Range.offset cannot be smaller than 0.");
+    }
+    if (iRange.count && iRange.count <= 0) {
+        throw new RangeError("Range.count must be larger than 0. Leave it undefined if you want a range from offset to the end.");
+    }
+    return iRange.count
+        ? "bytes=" + iRange.offset + "-" + (iRange.offset + iRange.count - 1)
+        : "bytes=" + iRange.offset + "-";
+}
+
+// Copyright (c) Microsoft Corporation. All rights reserved.
+/**
+ * A StorageClient represents a based URL class for {@link BlobServiceClient}, {@link ContainerClient}
+ * and etc.
+ *
+ * @export
+ * @class StorageClient
+ */
+var StorageClient = /** @class */ (function () {
+    /**
+     * Creates an instance of StorageClient.
+     * @param {string} url url to resource
+     * @param {Pipeline} pipeline request policy pipeline.
+     * @memberof StorageClient
+     */
+    function StorageClient(url, pipeline) {
+        // URL should be encoded and only once, protocol layer shouldn't encode URL again
+        this.url = escapeURLPath(url);
+        this.accountName = getAccountNameFromUrl(url);
+        this.pipeline = pipeline;
+        this.storageClientContext = new StorageClientContext(this.url, pipeline.toServiceClientOptions());
+        this.isHttps = iEqual(getURLScheme(this.url) || "", "https");
+        this.credential = new AnonymousCredential();
+        for (var _i = 0, _a = this.pipeline.factories; _i < _a.length; _i++) {
+            var factory = _a[_i];
+            if ((coreHttp.isNode && factory instanceof StorageSharedKeyCredential) ||
+                factory instanceof AnonymousCredential ||
+                coreHttp.isTokenCredential(factory)) {
+                this.credential = factory;
+            }
+        }
+        // Override protocol layer's default content-type
+        var storageClientContext = this.storageClientContext;
+        storageClientContext.requestContentType = undefined;
+    }
+    return StorageClient;
+}());
+
+// Copyright (c) Microsoft Corporation. All rights reserved.
+/**
+ * States for Batch.
+ *
+ * @enum {number}
+ */
+var BatchStates;
+(function (BatchStates) {
+    BatchStates[BatchStates["Good"] = 0] = "Good";
+    BatchStates[BatchStates["Error"] = 1] = "Error";
+})(BatchStates || (BatchStates = {}));
+/**
+ * Batch provides basic parallel execution with concurrency limits.
+ * Will stop execute left operations when one of the executed operation throws an error.
+ * But Batch cannot cancel ongoing operations, you need to cancel them by yourself.
+ *
+ * @export
+ * @class Batch
+ */
+var Batch = /** @class */ (function () {
+    /**
+     * Creates an instance of Batch.
+     * @param {number} [concurrency=5]
+     * @memberof Batch
+     */
+    function Batch(concurrency) {
+        if (concurrency === void 0) { concurrency = 5; }
+        /**
+         * Number of active operations under execution.
+         *
+         * @private
+         * @type {number}
+         * @memberof Batch
+         */
+        this.actives = 0;
+        /**
+         * Number of completed operations under execution.
+         *
+         * @private
+         * @type {number}
+         * @memberof Batch
+         */
+        this.completed = 0;
+        /**
+         * Offset of next operation to be executed.
+         *
+         * @private
+         * @type {number}
+         * @memberof Batch
+         */
+        this.offset = 0;
+        /**
+         * Operation array to be executed.
+         *
+         * @private
+         * @type {Operation[]}
+         * @memberof Batch
+         */
+        this.operations = [];
+        /**
+         * States of Batch. When an error happens, state will turn into error.
+         * Batch will stop execute left operations.
+         *
+         * @private
+         * @type {BatchStates}
+         * @memberof Batch
+         */
+        this.state = BatchStates.Good;
+        if (concurrency < 1) {
+            throw new RangeError("concurrency must be larger than 0");
+        }
+        this.concurrency = concurrency;
+        this.emitter = new events.EventEmitter();
+    }
+    /**
+     * Add a operation into queue.
+     *
+     * @param {Operation} operation
+     * @memberof Batch
+     */
+    Batch.prototype.addOperation = function (operation) {
+        var _this = this;
+        this.operations.push(function () { return tslib.__awaiter(_this, void 0, void 0, function () {
+            var error_1;
+            return tslib.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        this.actives++;
+                        return [4 /*yield*/, operation()];
+                    case 1:
+                        _a.sent();
+                        this.actives--;
+                        this.completed++;
+                        this.parallelExecute();
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_1 = _a.sent();
+                        this.emitter.emit("error", error_1);
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        }); });
+    };
+    /**
+     * Start execute operations in the queue.
+     *
+     * @returns {Promise<void>}
+     * @memberof Batch
+     */
+    Batch.prototype.do = function () {
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var _this = this;
+            return tslib.__generator(this, function (_a) {
+                if (this.operations.length === 0) {
+                    return [2 /*return*/, Promise.resolve()];
+                }
+                this.parallelExecute();
+                return [2 /*return*/, new Promise(function (resolve, reject) {
+                        _this.emitter.on("finish", resolve);
+                        _this.emitter.on("error", function (error) {
+                            _this.state = BatchStates.Error;
+                            reject(error);
+                        });
+                    })];
+            });
+        });
+    };
+    /**
+     * Get next operation to be executed. Return null when reaching ends.
+     *
+     * @private
+     * @returns {(Operation | null)}
+     * @memberof Batch
+     */
+    Batch.prototype.nextOperation = function () {
+        if (this.offset < this.operations.length) {
+            return this.operations[this.offset++];
+        }
+        return null;
+    };
+    /**
+     * Start execute operations. One one the most important difference between
+     * this method with do() is that do() wraps as an sync method.
+     *
+     * @private
+     * @returns {void}
+     * @memberof Batch
+     */
+    Batch.prototype.parallelExecute = function () {
+        if (this.state === BatchStates.Error) {
+            return;
+        }
+        if (this.completed >= this.operations.length) {
+            this.emitter.emit("finish");
+            return;
+        }
+        while (this.actives < this.concurrency) {
+            var operation = this.nextOperation();
+            if (operation) {
+                operation();
+            }
+            else {
+                return;
+            }
+        }
+    };
+    return Batch;
+}());
+
+// Copyright (c) Microsoft Corporation. All rights reserved.
+/**
+ * This class generates a readable stream from the data in an array of buffers.
+ *
+ * @export
+ * @class BuffersStream
+ */
+var BuffersStream = /** @class */ (function (_super) {
+    tslib.__extends(BuffersStream, _super);
+    /**
+     * Creates an instance of BuffersStream that will emit the data
+     * contained in the array of buffers.
+     *
+     * @param {Buffer[]} buffers Array of buffers containing the data
+     * @param {number} byteLength The total length of data contained in the buffers
+     * @memberof BuffersStream
+     */
+    function BuffersStream(buffers, byteLength, options) {
+        var _this = _super.call(this, options) || this;
+        _this.buffers = buffers;
+        _this.byteLength = byteLength;
+        _this.byteOffsetInCurrentBuffer = 0;
+        _this.bufferIndex = 0;
+        _this.pushedBytesLength = 0;
+        // check byteLength is no larger than buffers[] total length
+        var buffersLength = 0;
+        for (var _i = 0, _a = _this.buffers; _i < _a.length; _i++) {
+            var buf = _a[_i];
+            buffersLength += buf.byteLength;
+        }
+        if (buffersLength < _this.byteLength) {
+            throw new Error("Data size shouldn't be larger than the total length of buffers.");
+        }
+        return _this;
+    }
+    /**
+     * Internal _read() that will be called when the stream wants to pull more data in.
+     *
+     * @param {number} size Optional. The size of data to be read
+     * @memberof BuffersStream
+     */
+    BuffersStream.prototype._read = function (size) {
+        if (this.pushedBytesLength >= this.byteLength) {
+            this.push(null);
+        }
+        if (!size) {
+            size = this.readableHighWaterMark;
+        }
+        var outBuffers = [];
+        var i = 0;
+        while (i < size && this.pushedBytesLength < this.byteLength) {
+            // The last buffer may be longer than the data it contains.
+            var remainingDataInAllBuffers = this.byteLength - this.pushedBytesLength;
+            var remainingCapacityInThisBuffer = this.buffers[this.bufferIndex].byteLength - this.byteOffsetInCurrentBuffer;
+            var remaining = Math.min(remainingCapacityInThisBuffer, remainingDataInAllBuffers);
+            if (remaining > size - i) {
+                // chunkSize = size - i
+                var end = this.byteOffsetInCurrentBuffer + size - i;
+                outBuffers.push(this.buffers[this.bufferIndex].slice(this.byteOffsetInCurrentBuffer, end));
+                this.pushedBytesLength += size - i;
+                this.byteOffsetInCurrentBuffer = end;
+                i = size;
+                break;
+            }
+            else {
+                // chunkSize = remaining
+                var end = this.byteOffsetInCurrentBuffer + remaining;
+                outBuffers.push(this.buffers[this.bufferIndex].slice(this.byteOffsetInCurrentBuffer, end));
+                if (remaining === remainingCapacityInThisBuffer) {
+                    // this.buffers[this.bufferIndex] used up, shift to next one
+                    this.byteOffsetInCurrentBuffer = 0;
+                    this.bufferIndex++;
+                }
+                else {
+                    this.byteOffsetInCurrentBuffer = end;
+                }
+                this.pushedBytesLength += remaining;
+                i += remaining;
+            }
+        }
+        if (outBuffers.length > 1) {
+            this.push(Buffer.concat(outBuffers));
+        }
+        else if (outBuffers.length === 1) {
+            this.push(outBuffers[0]);
+        }
+    };
+    return BuffersStream;
+}(stream.Readable));
+
+// Copyright (c) Microsoft Corporation. All rights reserved.
+/**
+ * maxBufferLength is max size of each buffer in the pooled buffers.
+ */
+// Can't use import as Typescript doesn't recognize "buffer".
+var maxBufferLength = __webpack_require__(293).constants.MAX_LENGTH;
+/**
+ * This class provides a buffer container which conceptually has no hard size limit.
+ * It accepts a capacity, an array of input buffers and the total length of input data.
+ * It will allocate an internal "buffer" of the capacity and fill the data in the input buffers
+ * into the internal "buffer" serially with respect to the total length.
+ * Then by calling PooledBuffer.getReadableStream(), you can get a readable stream
+ * assembled from all the data in the internal "buffer".
+ *
+ * @export
+ * @class BufferScheduler
+ */
+var PooledBuffer = /** @class */ (function () {
+    function PooledBuffer(capacity, buffers, totalLength) {
+        /**
+         * Internal buffers used to keep the data.
+         * Each buffer has a length of the maxBufferLength except last one.
+         *
+         * @private
+         * @type {Buffer[]}
+         * @memberof PooledBuffer
+         */
+        this.buffers = [];
+        this.capacity = capacity;
+        this._size = 0;
+        // allocate
+        var bufferNum = Math.ceil(capacity / maxBufferLength);
+        for (var i = 0; i < bufferNum; i++) {
+            var len = i === bufferNum - 1 ? capacity % maxBufferLength : maxBufferLength;
+            if (len === 0) {
+                len = maxBufferLength;
+            }
+            this.buffers.push(Buffer.allocUnsafe(len));
+        }
+        if (buffers) {
+            this.fill(buffers, totalLength);
+        }
+    }
+    Object.defineProperty(PooledBuffer.prototype, "size", {
+        /**
+         * The size of the data contained in the pooled buffers.
+         */
+        get: function () {
+            return this._size;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    /**
+     * Fill the internal buffers with data in the input buffers serially
+     * with respect to the total length and the total capacity of the internal buffers.
+     * Data copied will be shift out of the input buffers.
+     *
+     * @param {Buffer[]} buffers Input buffers containing the data to be filled in the pooled buffer
+     * @param {number} totalLength Total length of the data to be filled in.
+     *
+     * @returns {void}
+     * @memberof PooledBuffer
+     */
+    PooledBuffer.prototype.fill = function (buffers, totalLength) {
+        this._size = Math.min(this.capacity, totalLength);
+        var i = 0, j = 0, targetOffset = 0, sourceOffset = 0, totalCopiedNum = 0;
+        while (totalCopiedNum < this._size) {
+            var source = buffers[i];
+            var target = this.buffers[j];
+            var copiedNum = source.copy(target, targetOffset, sourceOffset);
+            totalCopiedNum += copiedNum;
+            sourceOffset += copiedNum;
+            targetOffset += copiedNum;
+            if (sourceOffset === source.length) {
+                i++;
+                sourceOffset = 0;
+            }
+            if (targetOffset === target.length) {
+                j++;
+                targetOffset = 0;
+            }
+        }
+        // clear copied from source buffers
+        buffers.splice(0, i);
+        if (buffers.length > 0) {
+            buffers[0] = buffers[0].slice(sourceOffset);
+        }
+    };
+    /**
+     * Get the readable stream assembled from all the data in the internal buffers.
+     *
+     * @returns {Readable}
+     * @memberof PooledBuffer
+     */
+    PooledBuffer.prototype.getReadableStream = function () {
+        return new BuffersStream(this.buffers, this.size);
+    };
+    return PooledBuffer;
+}());
+
+// Copyright (c) Microsoft Corporation. All rights reserved.
+/**
+ * This class accepts a Node.js Readable stream as input, and keeps reading data
+ * from the stream into the internal buffer structure, until it reaches maxBuffers.
+ * Every available buffer will try to trigger outgoingHandler.
+ *
+ * The internal buffer structure includes an incoming buffer array, and a outgoing
+ * buffer array. The incoming buffer array includes the "empty" buffers can be filled
+ * with new incoming data. The outgoing array includes the filled buffers to be
+ * handled by outgoingHandler. Every above buffer size is defined by parameter bufferSize.
+ *
+ * NUM_OF_ALL_BUFFERS = BUFFERS_IN_INCOMING + BUFFERS_IN_OUTGOING + BUFFERS_UNDER_HANDLING
+ *
+ * NUM_OF_ALL_BUFFERS <= maxBuffers
+ *
+ * PERFORMANCE IMPROVEMENT TIPS:
+ * 1. Input stream highWaterMark is better to set a same value with bufferSize
+ *    parameter, which will avoid Buffer.concat() operations.
+ * 2. concurrency should set a smaller value than maxBuffers, which is helpful to
+ *    reduce the possibility when a outgoing handler waits for the stream data.
+ *    in this situation, outgoing handlers are blocked.
+ *    Outgoing queue shouldn't be empty.
+ * @export
+ * @class BufferScheduler
+ */
+var BufferScheduler = /** @class */ (function () {
+    /**
+     * Creates an instance of BufferScheduler.
+     *
+     * @param {Readable} readable A Node.js Readable stream
+     * @param {number} bufferSize Buffer size of every maintained buffer
+     * @param {number} maxBuffers How many buffers can be allocated
+     * @param {OutgoingHandler} outgoingHandler An async function scheduled to be
+     *                                          triggered when a buffer fully filled
+     *                                          with stream data
+     * @param {number} concurrency Concurrency of executing outgoingHandlers (>0)
+     * @param {string} [encoding] [Optional] Encoding of Readable stream when it's a string stream
+     * @memberof BufferScheduler
+     */
+    function BufferScheduler(readable, bufferSize, maxBuffers, outgoingHandler, concurrency, encoding) {
+        /**
+         * An internal event emitter.
+         *
+         * @private
+         * @type {EventEmitter}
+         * @memberof BufferScheduler
+         */
+        this.emitter = new events.EventEmitter();
+        /**
+         * An internal offset marker to track data offset in bytes of next outgoingHandler.
+         *
+         * @private
+         * @type {number}
+         * @memberof BufferScheduler
+         */
+        this.offset = 0;
+        /**
+         * An internal marker to track whether stream is end.
+         *
+         * @private
+         * @type {boolean}
+         * @memberof BufferScheduler
+         */
+        this.isStreamEnd = false;
+        /**
+         * An internal marker to track whether stream or outgoingHandler returns error.
+         *
+         * @private
+         * @type {boolean}
+         * @memberof BufferScheduler
+         */
+        this.isError = false;
+        /**
+         * How many handlers are executing.
+         *
+         * @private
+         * @type {number}
+         * @memberof BufferScheduler
+         */
+        this.executingOutgoingHandlers = 0;
+        /**
+         * How many buffers have been allocated.
+         *
+         * @private
+         * @type {number}
+         * @memberof BufferScheduler
+         */
+        this.numBuffers = 0;
+        /**
+         * Because this class doesn't know how much data every time stream pops, which
+         * is defined by highWaterMarker of the stream. So BufferScheduler will cache
+         * data received from the stream, when data in unresolvedDataArray exceeds the
+         * blockSize defined, it will try to concat a blockSize of buffer, fill into available
+         * buffers from incoming and push to outgoing array.
+         *
+         * @private
+         * @type {Buffer[]}
+         * @memberof BufferScheduler
+         */
+        this.unresolvedDataArray = [];
+        /**
+         * How much data consisted in unresolvedDataArray.
+         *
+         * @private
+         * @type {number}
+         * @memberof BufferScheduler
+         */
+        this.unresolvedLength = 0;
+        /**
+         * The array includes all the available buffers can be used to fill data from stream.
+         *
+         * @private
+         * @type {PooledBuffer[]}
+         * @memberof BufferScheduler
+         */
+        this.incoming = [];
+        /**
+         * The array (queue) includes all the buffers filled from stream data.
+         *
+         * @private
+         * @type {PooledBuffer[]}
+         * @memberof BufferScheduler
+         */
+        this.outgoing = [];
+        if (bufferSize <= 0) {
+            throw new RangeError("bufferSize must be larger than 0, current is " + bufferSize);
+        }
+        if (maxBuffers <= 0) {
+            throw new RangeError("maxBuffers must be larger than 0, current is " + maxBuffers);
+        }
+        if (concurrency <= 0) {
+            throw new RangeError("concurrency must be larger than 0, current is " + concurrency);
+        }
+        this.bufferSize = bufferSize;
+        this.maxBuffers = maxBuffers;
+        this.readable = readable;
+        this.outgoingHandler = outgoingHandler;
+        this.concurrency = concurrency;
+        this.encoding = encoding;
+    }
+    /**
+     * Start the scheduler, will return error when stream of any of the outgoingHandlers
+     * returns error.
+     *
+     * @returns {Promise<void>}
+     * @memberof BufferScheduler
+     */
+    BufferScheduler.prototype.do = function () {
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var _this = this;
+            return tslib.__generator(this, function (_a) {
+                return [2 /*return*/, new Promise(function (resolve, reject) {
+                        _this.readable.on("data", function (data) {
+                            data = typeof data === "string" ? Buffer.from(data, _this.encoding) : data;
+                            _this.appendUnresolvedData(data);
+                            if (!_this.resolveData()) {
+                                _this.readable.pause();
+                            }
+                        });
+                        _this.readable.on("error", function (err) {
+                            _this.emitter.emit("error", err);
+                        });
+                        _this.readable.on("end", function () {
+                            _this.isStreamEnd = true;
+                            _this.emitter.emit("checkEnd");
+                        });
+                        _this.emitter.on("error", function (err) {
+                            _this.isError = true;
+                            _this.readable.pause();
+                            reject(err);
+                        });
+                        _this.emitter.on("checkEnd", function () {
+                            if (_this.outgoing.length > 0) {
+                                _this.triggerOutgoingHandlers();
+                                return;
+                            }
+                            if (_this.isStreamEnd && _this.executingOutgoingHandlers === 0) {
+                                if (_this.unresolvedLength > 0 && _this.unresolvedLength < _this.bufferSize) {
+                                    var buffer_1 = _this.shiftBufferFromUnresolvedDataArray();
+                                    _this.outgoingHandler(function () { return buffer_1.getReadableStream(); }, buffer_1.size, _this.offset)
+                                        .then(resolve)
+                                        .catch(reject);
+                                }
+                                else if (_this.unresolvedLength >= _this.bufferSize) {
+                                    return;
+                                }
+                                else {
+                                    resolve();
+                                }
+                            }
+                        });
+                    })];
+            });
+        });
+    };
+    /**
+     * Insert a new data into unresolved array.
+     *
+     * @private
+     * @param {Buffer} data
+     * @memberof BufferScheduler
+     */
+    BufferScheduler.prototype.appendUnresolvedData = function (data) {
+        this.unresolvedDataArray.push(data);
+        this.unresolvedLength += data.length;
+    };
+    /**
+     * Try to shift a buffer with size in blockSize. The buffer returned may be less
+     * than blockSize when data in unresolvedDataArray is less than bufferSize.
+     *
+     * @private
+     * @returns {PooledBuffer}
+     * @memberof BufferScheduler
+     */
+    BufferScheduler.prototype.shiftBufferFromUnresolvedDataArray = function (buffer) {
+        if (!buffer) {
+            buffer = new PooledBuffer(this.bufferSize, this.unresolvedDataArray, this.unresolvedLength);
+        }
+        else {
+            buffer.fill(this.unresolvedDataArray, this.unresolvedLength);
+        }
+        this.unresolvedLength -= buffer.size;
+        return buffer;
+    };
+    /**
+     * Resolve data in unresolvedDataArray. For every buffer with size in blockSize
+     * shifted, it will try to get (or allocate a buffer) from incoming, and fill it,
+     * then push it into outgoing to be handled by outgoing handler.
+     *
+     * Return false when available buffers in incoming are not enough, else true.
+     *
+     * @private
+     * @returns {boolean} Return false when buffers in incoming are not enough, else true.
+     * @memberof BufferScheduler
+     */
+    BufferScheduler.prototype.resolveData = function () {
+        while (this.unresolvedLength >= this.bufferSize) {
+            var buffer = void 0;
+            if (this.incoming.length > 0) {
+                buffer = this.incoming.shift();
+                this.shiftBufferFromUnresolvedDataArray(buffer);
+            }
+            else {
+                if (this.numBuffers < this.maxBuffers) {
+                    buffer = this.shiftBufferFromUnresolvedDataArray();
+                    this.numBuffers++;
+                }
+                else {
+                    // No available buffer, wait for buffer returned
+                    return false;
+                }
+            }
+            this.outgoing.push(buffer);
+            this.triggerOutgoingHandlers();
+        }
+        return true;
+    };
+    /**
+     * Try to trigger a outgoing handler for every buffer in outgoing. Stop when
+     * concurrency reaches.
+     *
+     * @private
+     * @memberof BufferScheduler
+     */
+    BufferScheduler.prototype.triggerOutgoingHandlers = function () {
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var buffer;
+            return tslib.__generator(this, function (_a) {
+                do {
+                    if (this.executingOutgoingHandlers >= this.concurrency) {
+                        return [2 /*return*/];
+                    }
+                    buffer = this.outgoing.shift();
+                    if (buffer) {
+                        this.triggerOutgoingHandler(buffer);
+                    }
+                } while (buffer);
+                return [2 /*return*/];
+            });
+        });
+    };
+    /**
+     * Trigger a outgoing handler for a buffer shifted from outgoing.
+     *
+     * @private
+     * @param {Buffer} buffer
+     * @returns {Promise<any>}
+     * @memberof BufferScheduler
+     */
+    BufferScheduler.prototype.triggerOutgoingHandler = function (buffer) {
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var bufferLength, err_1;
+            return tslib.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        bufferLength = buffer.size;
+                        this.executingOutgoingHandlers++;
+                        this.offset += bufferLength;
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 3, , 4]);
+                        return [4 /*yield*/, this.outgoingHandler(function () { return buffer.getReadableStream(); }, bufferLength, this.offset - bufferLength)];
+                    case 2:
+                        _a.sent();
+                        return [3 /*break*/, 4];
+                    case 3:
+                        err_1 = _a.sent();
+                        this.emitter.emit("error", err_1);
+                        return [2 /*return*/];
+                    case 4:
+                        this.executingOutgoingHandlers--;
+                        this.reuseBuffer(buffer);
+                        this.emitter.emit("checkEnd");
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    /**
+     * Return buffer used by outgoing handler into incoming.
+     *
+     * @private
+     * @param {Buffer} buffer
+     * @memberof BufferScheduler
+     */
+    BufferScheduler.prototype.reuseBuffer = function (buffer) {
+        this.incoming.push(buffer);
+        if (!this.isError && this.resolveData() && !this.isStreamEnd) {
+            this.readable.resume();
+        }
+    };
+    return BufferScheduler;
+}());
+
+// Copyright (c) Microsoft Corporation.
+/**
+ * Creates a span using the global tracer.
+ * @param name The name of the operation being performed.
+ * @param tracingOptions The options for the underlying http request.
+ */
+function createSpan(operationName, tracingOptions) {
+    if (tracingOptions === void 0) { tracingOptions = {}; }
+    var tracer = coreTracing.getTracer();
+    var spanOptions = tslib.__assign(tslib.__assign({}, tracingOptions.spanOptions), { kind: api.SpanKind.INTERNAL });
+    var span = tracer.startSpan("Azure.Storage.Blob." + operationName, spanOptions);
+    span.setAttribute("az.namespace", "Microsoft.Storage");
+    var newOptions = tracingOptions.spanOptions || {};
+    if (span.isRecording()) {
+        newOptions = tslib.__assign(tslib.__assign({}, tracingOptions.spanOptions), { parent: span.context(), attributes: tslib.__assign(tslib.__assign({}, spanOptions.attributes), { "az.namespace": "Microsoft.Storage" }) });
+    }
+    return {
+        span: span,
+        spanOptions: newOptions
+    };
+}
+
+// Copyright (c) Microsoft Corporation. All rights reserved.
+/**
+ * Reads a readable stream into buffer. Fill the buffer from offset to end.
+ *
+ * @export
+ * @param {NodeJS.ReadableStream} stream A Node.js Readable stream
+ * @param {Buffer} buffer Buffer to be filled, length must >= offset
+ * @param {number} offset From which position in the buffer to be filled, inclusive
+ * @param {number} end To which position in the buffer to be filled, exclusive
+ * @param {string} [encoding] Encoding of the Readable stream
+ * @returns {Promise<void>}
+ */
+function streamToBuffer(stream, buffer, offset, end, encoding) {
+    return tslib.__awaiter(this, void 0, void 0, function () {
+        var pos, count;
+        return tslib.__generator(this, function (_a) {
+            pos = 0;
+            count = end - offset;
+            return [2 /*return*/, new Promise(function (resolve, reject) {
+                    stream.on("readable", function () {
+                        if (pos >= count) {
+                            resolve();
+                            return;
+                        }
+                        var chunk = stream.read();
+                        if (!chunk) {
+                            return;
+                        }
+                        if (typeof chunk === "string") {
+                            chunk = Buffer.from(chunk, encoding);
+                        }
+                        // How much data needed in this chunk
+                        var chunkLength = pos + chunk.length > count ? count - pos : chunk.length;
+                        buffer.fill(chunk.slice(0, chunkLength), offset + pos, offset + pos + chunkLength);
+                        pos += chunkLength;
+                    });
+                    stream.on("end", function () {
+                        if (pos < count) {
+                            reject(new Error("Stream drains before getting enough data needed. Data read: " + pos + ", data need: " + count));
+                        }
+                        resolve();
+                    });
+                    stream.on("error", reject);
+                })];
+        });
+    });
+}
+/**
+ * Reads a readable stream into buffer entirely.
+ *
+ * @export
+ * @param {NodeJS.ReadableStream} stream A Node.js Readable stream
+ * @param {Buffer} buffer Buffer to be filled, length must >= offset
+ * @param {string} [encoding] Encoding of the Readable stream
+ * @returns {Promise<number>} with the count of bytes read.
+ * @throws {RangeError} If buffer size is not big enough.
+ */
+function streamToBuffer2(stream, buffer, encoding) {
+    return tslib.__awaiter(this, void 0, void 0, function () {
+        var pos, bufferSize;
+        return tslib.__generator(this, function (_a) {
+            pos = 0;
+            bufferSize = buffer.length;
+            return [2 /*return*/, new Promise(function (resolve, reject) {
+                    stream.on("readable", function () {
+                        var chunk = stream.read();
+                        if (!chunk) {
+                            return;
+                        }
+                        if (typeof chunk === "string") {
+                            chunk = Buffer.from(chunk, encoding);
+                        }
+                        if (pos + chunk.length > bufferSize) {
+                            reject(new Error("Stream exceeds buffer size. Buffer size: " + bufferSize));
+                            return;
+                        }
+                        buffer.fill(chunk, pos, pos + chunk.length);
+                        pos += chunk.length;
+                    });
+                    stream.on("end", function () {
+                        resolve(pos);
+                    });
+                    stream.on("error", reject);
+                })];
+        });
+    });
+}
+/**
+ * ONLY AVAILABLE IN NODE.JS RUNTIME.
+ *
+ * Writes the content of a readstream to a local file. Returns a Promise which is completed after the file handle is closed.
+ *
+ * @export
+ * @param {NodeJS.ReadableStream} rs The read stream.
+ * @param {string} file Destination file path.
+ * @returns {Promise<void>}
+ */
+function readStreamToLocalFile(rs, file) {
+    return tslib.__awaiter(this, void 0, void 0, function () {
+        return tslib.__generator(this, function (_a) {
+            return [2 /*return*/, new Promise(function (resolve, reject) {
+                    var ws = fs.createWriteStream(file);
+                    rs.on("error", function (err) {
+                        reject(err);
+                    });
+                    ws.on("error", function (err) {
+                        reject(err);
+                    });
+                    ws.on("close", resolve);
+                    rs.pipe(ws);
+                })];
+        });
+    });
+}
+/**
+ * ONLY AVAILABLE IN NODE.JS RUNTIME.
+ *
+ * Promisified version of fs.stat().
+ */
+var fsStat = util.promisify(fs.stat);
+var fsCreateReadStream = fs.createReadStream;
+
 /**
  * A BlobClient represents a URL to an Azure Storage blob; the blob may be a block blob,
  * append blob, or page blob.
@@ -20042,7 +25134,7 @@ var BlobClient = /** @class */ (function (_super) {
         get: function () {
             return this._name;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobClient.prototype, "containerName", {
@@ -20052,7 +25144,7 @@ var BlobClient = /** @class */ (function (_super) {
         get: function () {
             return this._containerName;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     /**
@@ -20065,6 +25157,17 @@ var BlobClient = /** @class */ (function (_super) {
      */
     BlobClient.prototype.withSnapshot = function (snapshot) {
         return new BlobClient(setURLParameter(this.url, URLConstants.Parameters.SNAPSHOT, snapshot.length === 0 ? undefined : snapshot), this.pipeline);
+    };
+    /**
+     * Creates a new BlobClient object pointing to a version of this blob.
+     * Provide "" will remove the versionId and return a Client to the base blob.
+     *
+     * @param {string} versionId The versionId.
+     * @returns {BlobClient} A new BlobClient object pointing to the version of this blob.
+     * @memberof BlobClient
+     */
+    BlobClient.prototype.withVersion = function (versionId) {
+        return new BlobClient(setURLParameter(this.url, URLConstants.Parameters.VERSIONID, versionId.length === 0 ? undefined : versionId), this.pipeline);
     };
     /**
      * Creates a AppendBlobClient object.
@@ -20105,7 +25208,7 @@ var BlobClient = /** @class */ (function (_super) {
      * @param {number} [offset] From which position of the blob to download, >= 0
      * @param {number} [count] How much data to be downloaded, > 0. Will download to the end when undefined
      * @param {BlobDownloadOptions} [options] Optional options to Blob Download operation.
-     * @returns {Promise<BlobDownloadResponseModel>}
+     * @returns {Promise<BlobDownloadResponseParsed>}
      * @memberof BlobClient
      *
      * Example usage (Node.js):
@@ -20113,20 +25216,20 @@ var BlobClient = /** @class */ (function (_super) {
      * ```js
      * // Download and convert a blob to a string
      * const downloadBlockBlobResponse = await blobClient.download();
-     * const downloaded = await streamToString(downloadBlockBlobResponse.readableStreamBody);
-     * console.log("Downloaded blob content:", downloaded);
+     * const downloaded = await streamToBuffer(downloadBlockBlobResponse.readableStreamBody);
+     * console.log("Downloaded blob content:", downloaded.toString());
      *
-     * async function streamToString(readableStream) {
-     *   return new Promise((resolve, reject) => {
-     *     const chunks = [];
-     *     readableStream.on("data", (data) => {
-     *       chunks.push(data.toString());
-     *     });
-     *     readableStream.on("end", () => {
-     *       resolve(chunks.join(""));
-     *     });
-     *     readableStream.on("error", reject);
-     *   });
+     * async function streamToBuffer(readableStream) {
+     * return new Promise((resolve, reject) => {
+     * const chunks = [];
+     * readableStream.on("data", (data) => {
+     * chunks.push(data instanceof Buffer ? data : Buffer.from(data));
+     * });
+     * readableStream.on("end", () => {
+     * resolve(Buffer.concat(chunks));
+     * });
+     * readableStream.on("error", reject);
+     * });
      * }
      * ```
      *
@@ -20154,25 +25257,26 @@ var BlobClient = /** @class */ (function (_super) {
      * ```
      */
     BlobClient.prototype.download = function (offset, count, options) {
+        var _a;
         if (offset === void 0) { offset = 0; }
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, res_1, e_1;
+            var _b, span, spanOptions, res_1, wrappedRes, e_1;
             var _this = this;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            return tslib.__generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         options.conditions = options.conditions || {};
                         options.conditions = options.conditions || {};
                         ensureCpkIfSpecified(options.customerProvidedKey, this.isHttps);
-                        _a = createSpan("BlobClient-download", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
-                        _b.label = 1;
+                        _b = createSpan("BlobClient-download", options.tracingOptions), span = _b.span, spanOptions = _b.spanOptions;
+                        _c.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _c.trys.push([1, 3, 4, 5]);
                         return [4 /*yield*/, this.blobContext.download({
                                 abortSignal: options.abortSignal,
                                 leaseAccessConditions: options.conditions,
-                                modifiedAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions }),
                                 onDownloadProgress: coreHttp.isNode ? undefined : options.onProgress,
                                 range: offset === 0 && !count ? undefined : rangeToString({ offset: offset, count: count }),
                                 rangeGetContentMD5: options.rangeGetContentMD5,
@@ -20182,7 +25286,8 @@ var BlobClient = /** @class */ (function (_super) {
                                 spanOptions: spanOptions
                             })];
                     case 2:
-                        res_1 = _b.sent();
+                        res_1 = _c.sent();
+                        wrappedRes = tslib.__assign(tslib.__assign({}, res_1), { _response: res_1._response, objectReplicationDestinationPolicyId: res_1.objectReplicationPolicyId, objectReplicationSourceProperties: parseObjectReplicationRecord(res_1.objectReplicationRules) });
                         // We support retrying when download stream unexpected ends in Node.js runtime
                         // Following code shouldn't be bundled into browser build, however some
                         // bundlers may try to bundle following code and "FileReadResponse.ts".
@@ -20198,10 +25303,11 @@ var BlobClient = /** @class */ (function (_super) {
                         if (!res_1.etag) {
                             throw new RangeError("File download response doesn't contain valid etag header");
                         }
-                        return [2 /*return*/, new BlobDownloadResponse(res_1, function (start) { return tslib.__awaiter(_this, void 0, void 0, function () {
+                        return [2 /*return*/, new BlobDownloadResponse(wrappedRes, function (start) { return tslib.__awaiter(_this, void 0, void 0, function () {
                                 var updatedOptions;
-                                return tslib.__generator(this, function (_a) {
-                                    switch (_a.label) {
+                                var _a;
+                                return tslib.__generator(this, function (_b) {
+                                    switch (_b.label) {
                                         case 0:
                                             updatedOptions = {
                                                 leaseAccessConditions: options.conditions,
@@ -20209,7 +25315,8 @@ var BlobClient = /** @class */ (function (_super) {
                                                     ifMatch: options.conditions.ifMatch || res_1.etag,
                                                     ifModifiedSince: options.conditions.ifModifiedSince,
                                                     ifNoneMatch: options.conditions.ifNoneMatch,
-                                                    ifUnmodifiedSince: options.conditions.ifUnmodifiedSince
+                                                    ifUnmodifiedSince: options.conditions.ifUnmodifiedSince,
+                                                    ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions
                                                 },
                                                 range: rangeToString({
                                                     count: offset + res_1.contentLength - start,
@@ -20228,7 +25335,7 @@ var BlobClient = /** @class */ (function (_super) {
                                         //     updatedOptions.range
                                         //   }, options: ${JSON.stringify(updatedOptions)}`
                                         // );
-                                        return [2 /*return*/, (_a.sent()).readableStreamBody];
+                                        return [2 /*return*/, (_b.sent()).readableStreamBody];
                                     }
                                 });
                             }); }, offset, res_1.contentLength, {
@@ -20237,7 +25344,7 @@ var BlobClient = /** @class */ (function (_super) {
                                 onProgress: options.onProgress
                             })];
                     case 3:
-                        e_1 = _b.sent();
+                        e_1 = _c.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
                             message: e_1.message
@@ -20252,7 +25359,7 @@ var BlobClient = /** @class */ (function (_super) {
         });
     };
     /**
-     * Returns true if the Azrue blob resource represented by this client exists; false otherwise.
+     * Returns true if the Azure blob resource represented by this client exists; false otherwise.
      *
      * NOTE: use this function with care since an existing blob might be deleted by other clients or
      * applications. Vice versa new blobs might be added by other clients or applications after this
@@ -20277,6 +25384,7 @@ var BlobClient = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.getProperties({
                                 abortSignal: options.abortSignal,
                                 customerProvidedKey: options.customerProvidedKey,
+                                conditions: options.conditions,
                                 tracingOptions: tslib.__assign(tslib.__assign({}, options.tracingOptions), { spanOptions: spanOptions })
                             })];
                     case 2:
@@ -20319,28 +25427,31 @@ var BlobClient = /** @class */ (function (_super) {
      * @memberof BlobClient
      */
     BlobClient.prototype.getProperties = function (options) {
+        var _a;
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_3;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            var _b, span, spanOptions, res, e_3;
+            return tslib.__generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
-                        _a = createSpan("BlobClient-getProperties", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
-                        _b.label = 1;
+                        _b = createSpan("BlobClient-getProperties", options.tracingOptions), span = _b.span, spanOptions = _b.spanOptions;
+                        _c.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _c.trys.push([1, 3, 4, 5]);
                         options.conditions = options.conditions || {};
                         ensureCpkIfSpecified(options.customerProvidedKey, this.isHttps);
                         return [4 /*yield*/, this.blobContext.getProperties({
                                 abortSignal: options.abortSignal,
                                 leaseAccessConditions: options.conditions,
-                                modifiedAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions }),
                                 cpkInfo: options.customerProvidedKey,
                                 spanOptions: spanOptions
                             })];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 2:
+                        res = _c.sent();
+                        return [2 /*return*/, tslib.__assign(tslib.__assign({}, res), { _response: res._response, objectReplicationDestinationPolicyId: res.objectReplicationPolicyId, objectReplicationSourceProperties: parseObjectReplicationRecord(res.objectReplicationRules) })];
                     case 3:
-                        e_3 = _b.sent();
+                        e_3 = _c.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
                             message: e_3.message
@@ -20366,32 +25477,83 @@ var BlobClient = /** @class */ (function (_super) {
      * @memberof BlobClient
      */
     BlobClient.prototype.delete = function (options) {
+        var _a;
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_4;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            var _b, span, spanOptions, e_4;
+            return tslib.__generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
-                        _a = createSpan("BlobClient-delete", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
+                        _b = createSpan("BlobClient-delete", options.tracingOptions), span = _b.span, spanOptions = _b.spanOptions;
                         options.conditions = options.conditions || {};
-                        _b.label = 1;
+                        _c.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _c.trys.push([1, 3, 4, 5]);
                         return [4 /*yield*/, this.blobContext.deleteMethod({
                                 abortSignal: options.abortSignal,
                                 deleteSnapshots: options.deleteSnapshots,
                                 leaseAccessConditions: options.conditions,
-                                modifiedAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions }),
                                 spanOptions: spanOptions
                             })];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 2: return [2 /*return*/, _c.sent()];
                     case 3:
-                        e_4 = _b.sent();
+                        e_4 = _c.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
                             message: e_4.message
                         });
                         throw e_4;
+                    case 4:
+                        span.end();
+                        return [7 /*endfinally*/];
+                    case 5: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    /**
+     * Marks the specified blob or snapshot for deletion if it exists. The blob is later deleted
+     * during garbage collection. Note that in order to delete a blob, you must delete
+     * all of its snapshots. You can delete both at the same time with the Delete
+     * Blob operation.
+     * @see https://docs.microsoft.com/en-us/rest/api/storageservices/delete-blob
+     *
+     * @param {BlobDeleteOptions} [options] Optional options to Blob Delete operation.
+     * @returns {Promise<BlobDeleteIfExistsResponse>}
+     * @memberof BlobClient
+     */
+    BlobClient.prototype.deleteIfExists = function (options) {
+        var _a, _b;
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var _c, span, spanOptions, res, e_5;
+            return tslib.__generator(this, function (_d) {
+                switch (_d.label) {
+                    case 0:
+                        _c = createSpan("BlobClient-deleteIfExists", options.tracingOptions), span = _c.span, spanOptions = _c.spanOptions;
+                        _d.label = 1;
+                    case 1:
+                        _d.trys.push([1, 3, 4, 5]);
+                        return [4 /*yield*/, this.delete(tslib.__assign(tslib.__assign({}, options), { tracingOptions: tslib.__assign(tslib.__assign({}, options.tracingOptions), { spanOptions: spanOptions }) }))];
+                    case 2:
+                        res = _d.sent();
+                        return [2 /*return*/, tslib.__assign(tslib.__assign({ succeeded: true }, res), { _response: res._response // _response is made non-enumerable
+                             })];
+                    case 3:
+                        e_5 = _d.sent();
+                        if (((_a = e_5.details) === null || _a === void 0 ? void 0 : _a.errorCode) === "BlobNotFound") {
+                            span.setStatus({
+                                code: api.CanonicalCode.NOT_FOUND,
+                                message: "Expected exception when deleting a blob or snapshot only if it exists."
+                            });
+                            return [2 /*return*/, tslib.__assign(tslib.__assign({ succeeded: false }, (_b = e_5.response) === null || _b === void 0 ? void 0 : _b.parsedHeaders), { _response: e_5.response })];
+                        }
+                        span.setStatus({
+                            code: api.CanonicalCode.UNKNOWN,
+                            message: e_5.message
+                        });
+                        throw e_5;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -20413,7 +25575,7 @@ var BlobClient = /** @class */ (function (_super) {
     BlobClient.prototype.undelete = function (options) {
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_5;
+            var _a, span, spanOptions, e_6;
             return tslib.__generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -20427,12 +25589,12 @@ var BlobClient = /** @class */ (function (_super) {
                             })];
                     case 2: return [2 /*return*/, _b.sent()];
                     case 3:
-                        e_5 = _b.sent();
+                        e_6 = _b.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_5.message
+                            message: e_6.message
                         });
-                        throw e_5;
+                        throw e_6;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -20444,46 +25606,47 @@ var BlobClient = /** @class */ (function (_super) {
     /**
      * Sets system properties on the blob.
      *
-     * If no value provided, or no value provided for the specificed blob HTTP headers,
+     * If no value provided, or no value provided for the specified blob HTTP headers,
      * these blob HTTP headers without a value will be cleared.
      * @see https://docs.microsoft.com/en-us/rest/api/storageservices/set-blob-properties
      *
      * @param {BlobHTTPHeaders} [blobHTTPHeaders] If no value provided, or no value provided for
-     *                                                   the specificed blob HTTP headers, these blob HTTP
+     *                                                   the specified blob HTTP headers, these blob HTTP
      *                                                   headers without a value will be cleared.
      * @param {BlobSetHTTPHeadersOptions} [options] Optional options to Blob Set HTTP Headers operation.
      * @returns {Promise<BlobSetHTTPHeadersResponse>}
      * @memberof BlobClient
      */
     BlobClient.prototype.setHTTPHeaders = function (blobHTTPHeaders, options) {
+        var _a;
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_6;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            var _b, span, spanOptions, e_7;
+            return tslib.__generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
-                        _a = createSpan("BlobClient-setHTTPHeaders", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
+                        _b = createSpan("BlobClient-setHTTPHeaders", options.tracingOptions), span = _b.span, spanOptions = _b.spanOptions;
                         options.conditions = options.conditions || {};
-                        _b.label = 1;
+                        _c.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _c.trys.push([1, 3, 4, 5]);
                         ensureCpkIfSpecified(options.customerProvidedKey, this.isHttps);
                         return [4 /*yield*/, this.blobContext.setHTTPHeaders({
                                 abortSignal: options.abortSignal,
                                 blobHTTPHeaders: blobHTTPHeaders,
                                 leaseAccessConditions: options.conditions,
-                                modifiedAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions }),
                                 cpkInfo: options.customerProvidedKey,
                                 spanOptions: spanOptions
                             })];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 2: return [2 /*return*/, _c.sent()];
                     case 3:
-                        e_6 = _b.sent();
+                        e_7 = _c.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_6.message
+                            message: e_7.message
                         });
-                        throw e_6;
+                        throw e_7;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -20506,35 +25669,124 @@ var BlobClient = /** @class */ (function (_super) {
      * @memberof BlobClient
      */
     BlobClient.prototype.setMetadata = function (metadata, options) {
+        var _a;
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_7;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            var _b, span, spanOptions, e_8;
+            return tslib.__generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
-                        _a = createSpan("BlobClient-setMetadata", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
+                        _b = createSpan("BlobClient-setMetadata", options.tracingOptions), span = _b.span, spanOptions = _b.spanOptions;
                         options.conditions = options.conditions || {};
-                        _b.label = 1;
+                        _c.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _c.trys.push([1, 3, 4, 5]);
                         ensureCpkIfSpecified(options.customerProvidedKey, this.isHttps);
                         return [4 /*yield*/, this.blobContext.setMetadata({
                                 abortSignal: options.abortSignal,
                                 leaseAccessConditions: options.conditions,
                                 metadata: metadata,
-                                modifiedAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions }),
                                 cpkInfo: options.customerProvidedKey,
                                 encryptionScope: options.encryptionScope,
                                 spanOptions: spanOptions
                             })];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 2: return [2 /*return*/, _c.sent()];
                     case 3:
-                        e_7 = _b.sent();
+                        e_8 = _c.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_7.message
+                            message: e_8.message
                         });
-                        throw e_7;
+                        throw e_8;
+                    case 4:
+                        span.end();
+                        return [7 /*endfinally*/];
+                    case 5: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    /**
+     * Sets tags on the underlying blob.
+     * A blob can have up to 10 tags. Tag keys must be between 1 and 128 characters.  Tag values must be between 0 and 256 characters.
+     * Valid tag key and value characters include lower and upper case letters, digits (0-9),
+     * space (' '), plus ('+'), minus ('-'), period ('.'), foward slash ('/'), colon (':'), equals ('='), and underscore ('_').
+     *
+     * @param {Tags} tags
+     * @param {BlobSetTagsOptions} [options={}]
+     * @returns {Promise<BlobSetTagsResponse>}
+     * @memberof BlobClient
+     */
+    BlobClient.prototype.setTags = function (tags, options) {
+        var _a;
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var _b, span, spanOptions, e_9;
+            return tslib.__generator(this, function (_c) {
+                switch (_c.label) {
+                    case 0:
+                        _b = createSpan("BlobClient-setTags", options.tracingOptions), span = _b.span, spanOptions = _b.spanOptions;
+                        _c.label = 1;
+                    case 1:
+                        _c.trys.push([1, 3, 4, 5]);
+                        return [4 /*yield*/, this.blobContext.setTags({
+                                abortSignal: options.abortSignal,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions }),
+                                spanOptions: spanOptions,
+                                tags: toBlobTags(tags)
+                            })];
+                    case 2: return [2 /*return*/, _c.sent()];
+                    case 3:
+                        e_9 = _c.sent();
+                        span.setStatus({
+                            code: api.CanonicalCode.UNKNOWN,
+                            message: e_9.message
+                        });
+                        throw e_9;
+                    case 4:
+                        span.end();
+                        return [7 /*endfinally*/];
+                    case 5: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    /**
+     * Gets the tags associated with the underlying blob.
+     *
+     * @param {BlobGetTagsOptions} [options={}]
+     * @returns {Promise<BlobGetTagsResponse>}
+     * @memberof BlobClient
+     */
+    BlobClient.prototype.getTags = function (options) {
+        var _a;
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var _b, span, spanOptions, response, wrappedResponse, e_10;
+            return tslib.__generator(this, function (_c) {
+                switch (_c.label) {
+                    case 0:
+                        _b = createSpan("BlobClient-getTags", options.tracingOptions), span = _b.span, spanOptions = _b.spanOptions;
+                        _c.label = 1;
+                    case 1:
+                        _c.trys.push([1, 3, 4, 5]);
+                        return [4 /*yield*/, this.blobContext.getTags({
+                                abortSignal: options.abortSignal,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions }),
+                                spanOptions: spanOptions
+                            })];
+                    case 2:
+                        response = _c.sent();
+                        wrappedResponse = tslib.__assign(tslib.__assign({}, response), { _response: response._response, tags: toTags({ blobTagSet: response.blobTagSet }) || {} });
+                        return [2 /*return*/, wrappedResponse];
+                    case 3:
+                        e_10 = _c.sent();
+                        span.setStatus({
+                            code: api.CanonicalCode.UNKNOWN,
+                            message: e_10.message
+                        });
+                        throw e_10;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -20562,35 +25814,36 @@ var BlobClient = /** @class */ (function (_super) {
      * @memberof BlobClient
      */
     BlobClient.prototype.createSnapshot = function (options) {
+        var _a;
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_8;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            var _b, span, spanOptions, e_11;
+            return tslib.__generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
-                        _a = createSpan("BlobClient-createSnapshot", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
+                        _b = createSpan("BlobClient-createSnapshot", options.tracingOptions), span = _b.span, spanOptions = _b.spanOptions;
                         options.conditions = options.conditions || {};
-                        _b.label = 1;
+                        _c.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _c.trys.push([1, 3, 4, 5]);
                         ensureCpkIfSpecified(options.customerProvidedKey, this.isHttps);
                         return [4 /*yield*/, this.blobContext.createSnapshot({
                                 abortSignal: options.abortSignal,
                                 leaseAccessConditions: options.conditions,
                                 metadata: options.metadata,
-                                modifiedAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions }),
                                 cpkInfo: options.customerProvidedKey,
                                 encryptionScope: options.encryptionScope,
                                 spanOptions: spanOptions
                             })];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 2: return [2 /*return*/, _c.sent()];
                     case 3:
-                        e_8 = _b.sent();
+                        e_11 = _c.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_8.message
+                            message: e_11.message
                         });
-                        throw e_8;
+                        throw e_11;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -20735,7 +25988,7 @@ var BlobClient = /** @class */ (function (_super) {
     BlobClient.prototype.abortCopyFromURL = function (copyId, options) {
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_9;
+            var _a, span, spanOptions, e_12;
             return tslib.__generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -20750,12 +26003,12 @@ var BlobClient = /** @class */ (function (_super) {
                             })];
                     case 2: return [2 /*return*/, _b.sent()];
                     case 3:
-                        e_9 = _b.sent();
+                        e_12 = _b.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_9.message
+                            message: e_12.message
                         });
-                        throw e_9;
+                        throw e_12;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -20775,23 +26028,24 @@ var BlobClient = /** @class */ (function (_super) {
      * @memberof BlobClient
      */
     BlobClient.prototype.syncCopyFromURL = function (copySource, options) {
+        var _a;
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_10;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            var _b, span, spanOptions, e_13;
+            return tslib.__generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
-                        _a = createSpan("BlobClient-syncCopyFromURL", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
+                        _b = createSpan("BlobClient-syncCopyFromURL", options.tracingOptions), span = _b.span, spanOptions = _b.spanOptions;
                         options.conditions = options.conditions || {};
                         options.sourceConditions = options.sourceConditions || {};
-                        _b.label = 1;
+                        _c.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _c.trys.push([1, 3, 4, 5]);
                         return [4 /*yield*/, this.blobContext.copyFromURL(copySource, {
                                 abortSignal: options.abortSignal,
                                 metadata: options.metadata,
                                 leaseAccessConditions: options.conditions,
-                                modifiedAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions }),
                                 sourceModifiedAccessConditions: {
                                     sourceIfMatch: options.sourceConditions.ifMatch,
                                     sourceIfModifiedSince: options.sourceConditions.ifModifiedSince,
@@ -20799,16 +26053,17 @@ var BlobClient = /** @class */ (function (_super) {
                                     sourceIfUnmodifiedSince: options.sourceConditions.ifUnmodifiedSince
                                 },
                                 sourceContentMD5: options.sourceContentMD5,
+                                blobTagsString: toBlobTagsString(options.tags),
                                 spanOptions: spanOptions
                             })];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 2: return [2 /*return*/, _c.sent()];
                     case 3:
-                        e_10 = _b.sent();
+                        e_13 = _c.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_10.message
+                            message: e_13.message
                         });
-                        throw e_10;
+                        throw e_13;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -20831,30 +26086,32 @@ var BlobClient = /** @class */ (function (_super) {
      * @memberof BlobClient
      */
     BlobClient.prototype.setAccessTier = function (tier, options) {
+        var _a;
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_11;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            var _b, span, spanOptions, e_14;
+            return tslib.__generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
-                        _a = createSpan("BlobClient-setAccessTier", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
-                        _b.label = 1;
+                        _b = createSpan("BlobClient-setAccessTier", options.tracingOptions), span = _b.span, spanOptions = _b.spanOptions;
+                        _c.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _c.trys.push([1, 3, 4, 5]);
                         return [4 /*yield*/, this.blobContext.setTier(toAccessTier(tier), {
                                 abortSignal: options.abortSignal,
                                 leaseAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions }),
                                 rehydratePriority: options.rehydratePriority,
                                 spanOptions: spanOptions
                             })];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 2: return [2 /*return*/, _c.sent()];
                     case 3:
-                        e_11 = _b.sent();
+                        e_14 = _c.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_11.message
+                            message: e_14.message
                         });
-                        throw e_11;
+                        throw e_14;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -20866,7 +26123,7 @@ var BlobClient = /** @class */ (function (_super) {
     BlobClient.prototype.downloadToBuffer = function (param1, param2, param3, param4) {
         if (param4 === void 0) { param4 = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var buffer, offset, count, options, _a, span, spanOptions, response, transferProgress_1, batch, _loop_1, off, e_12;
+            var buffer, offset, count, options, _a, span, spanOptions, response, transferProgress_1, batch, _loop_1, off, e_15;
             var _this = this;
             return tslib.__generator(this, function (_b) {
                 switch (_b.label) {
@@ -20944,6 +26201,7 @@ var BlobClient = /** @class */ (function (_super) {
                                                     abortSignal: options.abortSignal,
                                                     conditions: options.conditions,
                                                     maxRetryRequests: options.maxRetryRequestsPerBlock,
+                                                    customerProvidedKey: options.customerProvidedKey,
                                                     tracingOptions: tslib.__assign(tslib.__assign({}, options.tracingOptions), { spanOptions: spanOptions })
                                                 })];
                                         case 1:
@@ -20972,12 +26230,12 @@ var BlobClient = /** @class */ (function (_super) {
                         _b.sent();
                         return [2 /*return*/, buffer];
                     case 5:
-                        e_12 = _b.sent();
+                        e_15 = _b.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_12.message
+                            message: e_15.message
                         });
-                        throw e_12;
+                        throw e_15;
                     case 6:
                         span.end();
                         return [7 /*endfinally*/];
@@ -20997,7 +26255,7 @@ var BlobClient = /** @class */ (function (_super) {
      * @param {number} [offset] From which position of the block blob to download.
      * @param {number} [count] How much data to be downloaded. Will download to the end when passing undefined.
      * @param {BlobDownloadOptions} [options] Options to Blob download options.
-     * @returns {Promise<BlobDownloadResponseModel>} The response data for blob download operation,
+     * @returns {Promise<BlobDownloadResponseParsed>} The response data for blob download operation,
      *                                                 but with readableStreamBody set to undefined since its
      *                                                 content is already read and written into a local file
      *                                                 at the specified path.
@@ -21007,7 +26265,7 @@ var BlobClient = /** @class */ (function (_super) {
         if (offset === void 0) { offset = 0; }
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, response, e_13;
+            var _a, span, spanOptions, response, e_16;
             return tslib.__generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -21028,12 +26286,12 @@ var BlobClient = /** @class */ (function (_super) {
                         response.blobDownloadStream = undefined;
                         return [2 /*return*/, response];
                     case 5:
-                        e_13 = _b.sent();
+                        e_16 = _b.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_13.message
+                            message: e_16.message
                         });
-                        throw e_13;
+                        throw e_16;
                     case 6:
                         span.end();
                         return [7 /*endfinally*/];
@@ -21061,13 +26319,20 @@ var BlobClient = /** @class */ (function (_super) {
                 containerName = pathComponents[1];
                 blobName = pathComponents[3];
             }
-            else {
+            else if (isIpEndpointStyle(parsedUrl)) {
                 // IPv4/IPv6 address hosts... Example - http://192.0.0.10:10001/devstoreaccount1/containername/blob
                 // Single word domain without a [dot] in the endpoint... Example - http://localhost:10001/devstoreaccount1/containername/blob
                 // .getPath() -> /devstoreaccount1/containername/blob
                 var pathComponents = parsedUrl.getPath().match("/([^/]*)/([^/]*)(/(.*))?");
                 containerName = pathComponents[2];
                 blobName = pathComponents[4];
+            }
+            else {
+                // "https://customdomain.com/containername/blob".
+                // .getPath() -> /containername/blob
+                var pathComponents = parsedUrl.getPath().match("/([^/]*)(/(.*))?");
+                containerName = pathComponents[1];
+                blobName = pathComponents[3];
             }
             // decode the encoded blobName, containerName - to get all the special characters that might be present in them
             containerName = decodeURIComponent(containerName);
@@ -21103,41 +26368,45 @@ var BlobClient = /** @class */ (function (_super) {
      * @memberof BlobClient
      */
     BlobClient.prototype.startCopyFromURL = function (copySource, options) {
+        var _a;
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_14;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            var _b, span, spanOptions, e_17;
+            return tslib.__generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
-                        _a = createSpan("BlobClient-startCopyFromURL", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
+                        _b = createSpan("BlobClient-startCopyFromURL", options.tracingOptions), span = _b.span, spanOptions = _b.spanOptions;
                         options.conditions = options.conditions || {};
                         options.sourceConditions = options.sourceConditions || {};
-                        _b.label = 1;
+                        _c.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _c.trys.push([1, 3, 4, 5]);
                         return [4 /*yield*/, this.blobContext.startCopyFromURL(copySource, {
                                 abortSignal: options.abortSignal,
                                 leaseAccessConditions: options.conditions,
                                 metadata: options.metadata,
-                                modifiedAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions }),
                                 sourceModifiedAccessConditions: {
                                     sourceIfMatch: options.sourceConditions.ifMatch,
                                     sourceIfModifiedSince: options.sourceConditions.ifModifiedSince,
                                     sourceIfNoneMatch: options.sourceConditions.ifNoneMatch,
-                                    sourceIfUnmodifiedSince: options.sourceConditions.ifUnmodifiedSince
+                                    sourceIfUnmodifiedSince: options.sourceConditions.ifUnmodifiedSince,
+                                    sourceIfTags: options.sourceConditions.tagConditions
                                 },
                                 rehydratePriority: options.rehydratePriority,
                                 tier: toAccessTier(options.tier),
+                                blobTagsString: toBlobTagsString(options.tags),
+                                sealBlob: options.sealBlob,
                                 spanOptions: spanOptions
                             })];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 2: return [2 /*return*/, _c.sent()];
                     case 3:
-                        e_14 = _b.sent();
+                        e_17 = _c.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_14.message
+                            message: e_17.message
                         });
-                        throw e_14;
+                        throw e_17;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -21246,36 +26515,130 @@ var AppendBlobClient = /** @class */ (function (_super) {
      * ```
      */
     AppendBlobClient.prototype.create = function (options) {
+        var _a;
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_15;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            var _b, span, spanOptions, e_18;
+            return tslib.__generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
-                        _a = createSpan("AppendBlobClient-create", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
+                        _b = createSpan("AppendBlobClient-create", options.tracingOptions), span = _b.span, spanOptions = _b.spanOptions;
                         options.conditions = options.conditions || {};
-                        _b.label = 1;
+                        _c.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _c.trys.push([1, 3, 4, 5]);
                         ensureCpkIfSpecified(options.customerProvidedKey, this.isHttps);
                         return [4 /*yield*/, this.appendBlobContext.create(0, {
                                 abortSignal: options.abortSignal,
                                 blobHTTPHeaders: options.blobHTTPHeaders,
                                 leaseAccessConditions: options.conditions,
                                 metadata: options.metadata,
-                                modifiedAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions }),
                                 cpkInfo: options.customerProvidedKey,
                                 encryptionScope: options.encryptionScope,
+                                blobTagsString: toBlobTagsString(options.tags),
                                 spanOptions: spanOptions
                             })];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 2: return [2 /*return*/, _c.sent()];
                     case 3:
-                        e_15 = _b.sent();
+                        e_18 = _c.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_15.message
+                            message: e_18.message
                         });
-                        throw e_15;
+                        throw e_18;
+                    case 4:
+                        span.end();
+                        return [7 /*endfinally*/];
+                    case 5: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    /**
+     * Creates a 0-length append blob. Call AppendBlock to append data to an append blob.
+     * If the blob with the same name already exists, the content of the existing blob will remain unchanged.
+     * @see https://docs.microsoft.com/rest/api/storageservices/put-blob
+     *
+     * @param {AppendBlobCreateIfNotExistsOptions} [options]
+     * @returns {Promise<AppendBlobCreateIfNotExistsResponse>}
+     * @memberof AppendBlobClient
+     */
+    AppendBlobClient.prototype.createIfNotExists = function (options) {
+        var _a, _b;
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var _c, span, spanOptions, conditions, res, e_19;
+            return tslib.__generator(this, function (_d) {
+                switch (_d.label) {
+                    case 0:
+                        _c = createSpan("AppendBlobClient-createIfNotExists", options.tracingOptions), span = _c.span, spanOptions = _c.spanOptions;
+                        conditions = { ifNoneMatch: ETagAny };
+                        _d.label = 1;
+                    case 1:
+                        _d.trys.push([1, 3, 4, 5]);
+                        return [4 /*yield*/, this.create(tslib.__assign(tslib.__assign({}, options), { conditions: conditions, tracingOptions: tslib.__assign(tslib.__assign({}, options.tracingOptions), { spanOptions: spanOptions }) }))];
+                    case 2:
+                        res = _d.sent();
+                        return [2 /*return*/, tslib.__assign(tslib.__assign({ succeeded: true }, res), { _response: res._response // _response is made non-enumerable
+                             })];
+                    case 3:
+                        e_19 = _d.sent();
+                        if (((_a = e_19.details) === null || _a === void 0 ? void 0 : _a.errorCode) === "BlobAlreadyExists") {
+                            span.setStatus({
+                                code: api.CanonicalCode.ALREADY_EXISTS,
+                                message: "Expected exception when creating a blob only if it does not already exist."
+                            });
+                            return [2 /*return*/, tslib.__assign(tslib.__assign({ succeeded: false }, (_b = e_19.response) === null || _b === void 0 ? void 0 : _b.parsedHeaders), { _response: e_19.response })];
+                        }
+                        span.setStatus({
+                            code: api.CanonicalCode.UNKNOWN,
+                            message: e_19.message
+                        });
+                        throw e_19;
+                    case 4:
+                        span.end();
+                        return [7 /*endfinally*/];
+                    case 5: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    /**
+     * Seals the append blob, making it read only.
+     *
+     * @param {AppendBlobSealOptions} [options={}]
+     * @returns {Promise<AppendBlobAppendBlockResponse>}
+     * @memberof AppendBlobClient
+     */
+    AppendBlobClient.prototype.seal = function (options) {
+        var _a;
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var _b, span, spanOptions, e_20;
+            return tslib.__generator(this, function (_c) {
+                switch (_c.label) {
+                    case 0:
+                        _b = createSpan("AppendBlobClient-seal", options.tracingOptions), span = _b.span, spanOptions = _b.spanOptions;
+                        options.conditions = options.conditions || {};
+                        _c.label = 1;
+                    case 1:
+                        _c.trys.push([1, 3, 4, 5]);
+                        return [4 /*yield*/, this.appendBlobContext.seal({
+                                abortSignal: options.abortSignal,
+                                appendPositionAccessConditions: options.conditions,
+                                leaseAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions }),
+                                spanOptions: spanOptions
+                            })];
+                    case 2: return [2 /*return*/, _c.sent()];
+                    case 3:
+                        e_20 = _c.sent();
+                        span.setStatus({
+                            code: api.CanonicalCode.UNKNOWN,
+                            message: e_20.message
+                        });
+                        throw e_20;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -21310,23 +26673,24 @@ var AppendBlobClient = /** @class */ (function (_super) {
      * ```
      */
     AppendBlobClient.prototype.appendBlock = function (body, contentLength, options) {
+        var _a;
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_16;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            var _b, span, spanOptions, e_21;
+            return tslib.__generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
-                        _a = createSpan("AppendBlobClient-appendBlock", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
+                        _b = createSpan("AppendBlobClient-appendBlock", options.tracingOptions), span = _b.span, spanOptions = _b.spanOptions;
                         options.conditions = options.conditions || {};
-                        _b.label = 1;
+                        _c.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _c.trys.push([1, 3, 4, 5]);
                         ensureCpkIfSpecified(options.customerProvidedKey, this.isHttps);
                         return [4 /*yield*/, this.appendBlobContext.appendBlock(body, contentLength, {
                                 abortSignal: options.abortSignal,
                                 appendPositionAccessConditions: options.conditions,
                                 leaseAccessConditions: options.conditions,
-                                modifiedAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions }),
                                 onUploadProgress: options.onProgress,
                                 transactionalContentMD5: options.transactionalContentMD5,
                                 transactionalContentCrc64: options.transactionalContentCrc64,
@@ -21334,14 +26698,14 @@ var AppendBlobClient = /** @class */ (function (_super) {
                                 encryptionScope: options.encryptionScope,
                                 spanOptions: spanOptions
                             })];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 2: return [2 /*return*/, _c.sent()];
                     case 3:
-                        e_16 = _b.sent();
+                        e_21 = _c.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_16.message
+                            message: e_21.message
                         });
-                        throw e_16;
+                        throw e_21;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -21367,18 +26731,19 @@ var AppendBlobClient = /** @class */ (function (_super) {
      * @memberof AppendBlobClient
      */
     AppendBlobClient.prototype.appendBlockFromURL = function (sourceURL, sourceOffset, count, options) {
+        var _a;
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_17;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            var _b, span, spanOptions, e_22;
+            return tslib.__generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
-                        _a = createSpan("AppendBlobClient-appendBlockFromURL", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
+                        _b = createSpan("AppendBlobClient-appendBlockFromURL", options.tracingOptions), span = _b.span, spanOptions = _b.spanOptions;
                         options.conditions = options.conditions || {};
                         options.sourceConditions = options.sourceConditions || {};
-                        _b.label = 1;
+                        _c.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _c.trys.push([1, 3, 4, 5]);
                         ensureCpkIfSpecified(options.customerProvidedKey, this.isHttps);
                         return [4 /*yield*/, this.appendBlobContext.appendBlockFromUrl(sourceURL, 0, {
                                 abortSignal: options.abortSignal,
@@ -21387,7 +26752,7 @@ var AppendBlobClient = /** @class */ (function (_super) {
                                 sourceContentCrc64: options.sourceContentCrc64,
                                 leaseAccessConditions: options.conditions,
                                 appendPositionAccessConditions: options.conditions,
-                                modifiedAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions }),
                                 sourceModifiedAccessConditions: {
                                     sourceIfMatch: options.sourceConditions.ifMatch,
                                     sourceIfModifiedSince: options.sourceConditions.ifModifiedSince,
@@ -21398,14 +26763,14 @@ var AppendBlobClient = /** @class */ (function (_super) {
                                 encryptionScope: options.encryptionScope,
                                 spanOptions: spanOptions
                             })];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 2: return [2 /*return*/, _c.sent()];
                     case 3:
-                        e_17 = _b.sent();
+                        e_22 = _c.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_17.message
+                            message: e_22.message
                         });
-                        throw e_17;
+                        throw e_22;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -21484,6 +26849,7 @@ var BlockBlobClient = /** @class */ (function (_super) {
         }
         _this = _super.call(this, url, pipeline) || this;
         _this.blockBlobContext = new BlockBlob(_this.storageClientContext);
+        _this._blobContext = new Blob$1(_this.storageClientContext);
         return _this;
     }
     /**
@@ -21497,6 +26863,84 @@ var BlockBlobClient = /** @class */ (function (_super) {
      */
     BlockBlobClient.prototype.withSnapshot = function (snapshot) {
         return new BlockBlobClient(setURLParameter(this.url, URLConstants.Parameters.SNAPSHOT, snapshot.length === 0 ? undefined : snapshot), this.pipeline);
+    };
+    /**
+     * ONLY AVAILABLE IN NODE.JS RUNTIME.
+     *
+     * Quick query for a JSON or CSV formatted blob.
+     *
+     * Example usage (Node.js):
+     *
+     * ```js
+     * // Query and convert a blob to a string
+     * const queryBlockBlobResponse = await blockBlobClient.query("select * from BlobStorage");
+     * const downloaded = (await streamToBuffer(queryBlockBlobResponse.readableStreamBody)).toString();
+     * console.log("Query blob content:", downloaded);
+     *
+     * async function streamToBuffer(readableStream) {
+     *   return new Promise((resolve, reject) => {
+     *     const chunks = [];
+     *     readableStream.on("data", (data) => {
+     *       chunks.push(data instanceof Buffer ? data : Buffer.from(data));
+     *     });
+     *     readableStream.on("end", () => {
+     *       resolve(Buffer.concat(chunks));
+     *     });
+     *     readableStream.on("error", reject);
+     *   });
+     * }
+     * ```
+     *
+     * @param {string} query
+     * @param {BlockBlobQueryOptions} [options={}]
+     * @returns {Promise<BlobDownloadResponseModel>}
+     * @memberof BlockBlobClient
+     */
+    BlockBlobClient.prototype.query = function (query, options) {
+        var _a;
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var _b, span, spanOptions, response, e_23;
+            return tslib.__generator(this, function (_c) {
+                switch (_c.label) {
+                    case 0:
+                        ensureCpkIfSpecified(options.customerProvidedKey, this.isHttps);
+                        _b = createSpan("BlockBlobClient-query", options.tracingOptions), span = _b.span, spanOptions = _b.spanOptions;
+                        _c.label = 1;
+                    case 1:
+                        _c.trys.push([1, 3, 4, 5]);
+                        return [4 /*yield*/, this._blobContext.query({
+                                abortSignal: options.abortSignal,
+                                queryRequest: {
+                                    expression: query,
+                                    inputSerialization: toQuerySerialization(options.inputTextConfiguration),
+                                    outputSerialization: toQuerySerialization(options.outputTextConfiguration)
+                                },
+                                leaseAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions }),
+                                spanOptions: spanOptions
+                            })];
+                    case 2:
+                        response = _c.sent();
+                        return [2 /*return*/, new BlobQueryResponse(response, {
+                                abortSignal: options.abortSignal,
+                                onProgress: options.onProgress,
+                                onError: options.onError
+                            })];
+                    case 3:
+                        e_23 = _c.sent();
+                        span.setStatus({
+                            code: api.CanonicalCode.UNKNOWN,
+                            message: e_23.message
+                        });
+                        throw e_23;
+                    case 4:
+                        span.end();
+                        return [7 /*endfinally*/];
+                    case 5: return [2 /*return*/];
+                }
+            });
+        });
     };
     /**
      * Creates a new block blob, or updates the content of an existing block blob.
@@ -21527,38 +26971,40 @@ var BlockBlobClient = /** @class */ (function (_super) {
      * ```
      */
     BlockBlobClient.prototype.upload = function (body, contentLength, options) {
+        var _a;
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_18;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            var _b, span, spanOptions, e_24;
+            return tslib.__generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         options.conditions = options.conditions || {};
-                        _a = createSpan("BlockBlobClient-upload", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
-                        _b.label = 1;
+                        _b = createSpan("BlockBlobClient-upload", options.tracingOptions), span = _b.span, spanOptions = _b.spanOptions;
+                        _c.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _c.trys.push([1, 3, 4, 5]);
                         ensureCpkIfSpecified(options.customerProvidedKey, this.isHttps);
                         return [4 /*yield*/, this.blockBlobContext.upload(body, contentLength, {
                                 abortSignal: options.abortSignal,
                                 blobHTTPHeaders: options.blobHTTPHeaders,
                                 leaseAccessConditions: options.conditions,
                                 metadata: options.metadata,
-                                modifiedAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions }),
                                 onUploadProgress: options.onProgress,
                                 cpkInfo: options.customerProvidedKey,
                                 encryptionScope: options.encryptionScope,
                                 tier: toAccessTier(options.tier),
+                                blobTagsString: toBlobTagsString(options.tags),
                                 spanOptions: spanOptions
                             })];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 2: return [2 /*return*/, _c.sent()];
                     case 3:
-                        e_18 = _b.sent();
+                        e_24 = _c.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_18.message
+                            message: e_24.message
                         });
-                        throw e_18;
+                        throw e_24;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -21582,7 +27028,7 @@ var BlockBlobClient = /** @class */ (function (_super) {
     BlockBlobClient.prototype.stageBlock = function (blockId, body, contentLength, options) {
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_19;
+            var _a, span, spanOptions, e_25;
             return tslib.__generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -21603,12 +27049,12 @@ var BlockBlobClient = /** @class */ (function (_super) {
                             })];
                     case 2: return [2 /*return*/, _b.sent()];
                     case 3:
-                        e_19 = _b.sent();
+                        e_25 = _b.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_19.message
+                            message: e_25.message
                         });
-                        throw e_19;
+                        throw e_25;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -21643,7 +27089,7 @@ var BlockBlobClient = /** @class */ (function (_super) {
         if (offset === void 0) { offset = 0; }
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_20;
+            var _a, span, spanOptions, e_26;
             return tslib.__generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -21664,12 +27110,12 @@ var BlockBlobClient = /** @class */ (function (_super) {
                             })];
                     case 2: return [2 /*return*/, _b.sent()];
                     case 3:
-                        e_20 = _b.sent();
+                        e_26 = _b.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_20.message
+                            message: e_26.message
                         });
-                        throw e_20;
+                        throw e_26;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -21692,37 +27138,39 @@ var BlockBlobClient = /** @class */ (function (_super) {
      * @memberof BlockBlobClient
      */
     BlockBlobClient.prototype.commitBlockList = function (blocks, options) {
+        var _a;
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_21;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            var _b, span, spanOptions, e_27;
+            return tslib.__generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         options.conditions = options.conditions || {};
-                        _a = createSpan("BlockBlobClient-commitBlockList", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
-                        _b.label = 1;
+                        _b = createSpan("BlockBlobClient-commitBlockList", options.tracingOptions), span = _b.span, spanOptions = _b.spanOptions;
+                        _c.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _c.trys.push([1, 3, 4, 5]);
                         ensureCpkIfSpecified(options.customerProvidedKey, this.isHttps);
                         return [4 /*yield*/, this.blockBlobContext.commitBlockList({ latest: blocks }, {
                                 abortSignal: options.abortSignal,
                                 blobHTTPHeaders: options.blobHTTPHeaders,
                                 leaseAccessConditions: options.conditions,
                                 metadata: options.metadata,
-                                modifiedAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions }),
                                 cpkInfo: options.customerProvidedKey,
                                 encryptionScope: options.encryptionScope,
                                 tier: toAccessTier(options.tier),
+                                blobTagsString: toBlobTagsString(options.tags),
                                 spanOptions: spanOptions
                             })];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 2: return [2 /*return*/, _c.sent()];
                     case 3:
-                        e_21 = _b.sent();
+                        e_27 = _c.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_21.message
+                            message: e_27.message
                         });
-                        throw e_21;
+                        throw e_27;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -21743,23 +27191,25 @@ var BlockBlobClient = /** @class */ (function (_super) {
      * @memberof BlockBlobClient
      */
     BlockBlobClient.prototype.getBlockList = function (listType, options) {
+        var _a;
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, res, e_22;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            var _b, span, spanOptions, res, e_28;
+            return tslib.__generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
-                        _a = createSpan("BlockBlobClient-getBlockList", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
-                        _b.label = 1;
+                        _b = createSpan("BlockBlobClient-getBlockList", options.tracingOptions), span = _b.span, spanOptions = _b.spanOptions;
+                        _c.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _c.trys.push([1, 3, 4, 5]);
                         return [4 /*yield*/, this.blockBlobContext.getBlockList(listType, {
                                 abortSignal: options.abortSignal,
                                 leaseAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions }),
                                 spanOptions: spanOptions
                             })];
                     case 2:
-                        res = _b.sent();
+                        res = _c.sent();
                         if (!res.committedBlocks) {
                             res.committedBlocks = [];
                         }
@@ -21768,12 +27218,12 @@ var BlockBlobClient = /** @class */ (function (_super) {
                         }
                         return [2 /*return*/, res];
                     case 3:
-                        e_22 = _b.sent();
+                        e_28 = _c.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_22.message
+                            message: e_28.message
                         });
-                        throw e_22;
+                        throw e_28;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -21801,7 +27251,7 @@ var BlockBlobClient = /** @class */ (function (_super) {
     BlockBlobClient.prototype.uploadBrowserData = function (browserData, options) {
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, browserBlob_1, e_23;
+            var _a, span, spanOptions, browserBlob_1, e_29;
             return tslib.__generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -21815,12 +27265,12 @@ var BlockBlobClient = /** @class */ (function (_super) {
                             }, browserBlob_1.size, tslib.__assign(tslib.__assign({}, options), { tracingOptions: tslib.__assign(tslib.__assign({}, options.tracingOptions), { spanOptions: spanOptions }) }))];
                     case 2: return [2 /*return*/, _b.sent()];
                     case 3:
-                        e_23 = _b.sent();
+                        e_29 = _b.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_23.message
+                            message: e_29.message
                         });
-                        throw e_23;
+                        throw e_29;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -21848,7 +27298,7 @@ var BlockBlobClient = /** @class */ (function (_super) {
     BlockBlobClient.prototype.uploadSeekableBlob = function (blobFactory, size, options) {
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, numBlocks_1, blockList_1, blockIDPrefix_1, transferProgress_2, batch, _loop_2, i, e_24;
+            var _a, span, spanOptions, numBlocks_1, blockList_1, blockIDPrefix_1, transferProgress_2, batch, _loop_2, i, e_30;
             var _this = this;
             return tslib.__generator(this, function (_b) {
                 switch (_b.label) {
@@ -21940,12 +27390,12 @@ var BlockBlobClient = /** @class */ (function (_super) {
                         _b.sent();
                         return [2 /*return*/, this.commitBlockList(blockList_1, tslib.__assign(tslib.__assign({}, options), { tracingOptions: tslib.__assign(tslib.__assign({}, options.tracingOptions), { spanOptions: spanOptions }) }))];
                     case 5:
-                        e_24 = _b.sent();
+                        e_30 = _b.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_24.message
+                            message: e_30.message
                         });
-                        throw e_24;
+                        throw e_30;
                     case 6:
                         span.end();
                         return [7 /*endfinally*/];
@@ -21971,7 +27421,7 @@ var BlockBlobClient = /** @class */ (function (_super) {
     BlockBlobClient.prototype.uploadFile = function (filePath, options) {
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, size, e_25;
+            var _a, span, spanOptions, size, e_31;
             return tslib.__generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -21983,7 +27433,7 @@ var BlockBlobClient = /** @class */ (function (_super) {
                     case 2:
                         size = (_b.sent()).size;
                         return [4 /*yield*/, this.uploadResetableStream(function (offset, count) {
-                                return fs.createReadStream(filePath, {
+                                return fsCreateReadStream(filePath, {
                                     autoClose: true,
                                     end: count ? offset + count - 1 : Infinity,
                                     start: offset
@@ -21991,12 +27441,12 @@ var BlockBlobClient = /** @class */ (function (_super) {
                             }, size, tslib.__assign(tslib.__assign({}, options), { tracingOptions: tslib.__assign(tslib.__assign({}, options.tracingOptions), { spanOptions: spanOptions }) }))];
                     case 3: return [2 /*return*/, _b.sent()];
                     case 4:
-                        e_25 = _b.sent();
+                        e_31 = _b.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_25.message
+                            message: e_31.message
                         });
-                        throw e_25;
+                        throw e_31;
                     case 5:
                         span.end();
                         return [7 /*endfinally*/];
@@ -22027,7 +27477,7 @@ var BlockBlobClient = /** @class */ (function (_super) {
         if (maxConcurrency === void 0) { maxConcurrency = 5; }
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, blockNum_1, blockIDPrefix_2, transferProgress_3, blockList_2, scheduler, e_26;
+            var _a, span, spanOptions, blockNum_1, blockIDPrefix_2, transferProgress_3, blockList_2, scheduler, e_32;
             var _this = this;
             return tslib.__generator(this, function (_b) {
                 switch (_b.label) {
@@ -22046,7 +27496,7 @@ var BlockBlobClient = /** @class */ (function (_super) {
                         blockIDPrefix_2 = coreHttp.generateUuid();
                         transferProgress_3 = 0;
                         blockList_2 = [];
-                        scheduler = new BufferScheduler(stream, bufferSize, maxConcurrency, function (buffer) { return tslib.__awaiter(_this, void 0, void 0, function () {
+                        scheduler = new BufferScheduler(stream, bufferSize, maxConcurrency, function (body, length) { return tslib.__awaiter(_this, void 0, void 0, function () {
                             var blockID;
                             return tslib.__generator(this, function (_a) {
                                 switch (_a.label) {
@@ -22054,7 +27504,7 @@ var BlockBlobClient = /** @class */ (function (_super) {
                                         blockID = generateBlockID(blockIDPrefix_2, blockNum_1);
                                         blockList_2.push(blockID);
                                         blockNum_1++;
-                                        return [4 /*yield*/, this.stageBlock(blockID, buffer, buffer.length, {
+                                        return [4 /*yield*/, this.stageBlock(blockID, body, length, {
                                                 conditions: options.conditions,
                                                 encryptionScope: options.encryptionScope,
                                                 tracingOptions: tslib.__assign(tslib.__assign({}, options.tracingOptions), { spanOptions: spanOptions })
@@ -22062,7 +27512,7 @@ var BlockBlobClient = /** @class */ (function (_super) {
                                     case 1:
                                         _a.sent();
                                         // Update progress after block is successfully uploaded to server, in case of block trying
-                                        transferProgress_3 += buffer.length;
+                                        transferProgress_3 += length;
                                         if (options.onProgress) {
                                             options.onProgress({ loadedBytes: transferProgress_3 });
                                         }
@@ -22081,12 +27531,12 @@ var BlockBlobClient = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.commitBlockList(blockList_2, tslib.__assign(tslib.__assign({}, options), { tracingOptions: tslib.__assign(tslib.__assign({}, options.tracingOptions), { spanOptions: spanOptions }) }))];
                     case 3: return [2 /*return*/, _b.sent()];
                     case 4:
-                        e_26 = _b.sent();
+                        e_32 = _b.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_26.message
+                            message: e_32.message
                         });
-                        throw e_26;
+                        throw e_32;
                     case 5:
                         span.end();
                         return [7 /*endfinally*/];
@@ -22117,7 +27567,7 @@ var BlockBlobClient = /** @class */ (function (_super) {
     BlockBlobClient.prototype.uploadResetableStream = function (streamFactory, size, options) {
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, numBlocks_2, blockList_3, blockIDPrefix_3, transferProgress_4, batch, _loop_3, i, e_27;
+            var _a, span, spanOptions, numBlocks_2, blockList_3, blockIDPrefix_3, transferProgress_4, batch, _loop_3, i, e_33;
             var _this = this;
             return tslib.__generator(this, function (_b) {
                 switch (_b.label) {
@@ -22207,12 +27657,12 @@ var BlockBlobClient = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.commitBlockList(blockList_3, tslib.__assign(tslib.__assign({}, options), { tracingOptions: tslib.__assign(tslib.__assign({}, options.tracingOptions), { spanOptions: spanOptions }) }))];
                     case 5: return [2 /*return*/, _b.sent()];
                     case 6:
-                        e_27 = _b.sent();
+                        e_33 = _b.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_27.message
+                            message: e_33.message
                         });
-                        throw e_27;
+                        throw e_33;
                     case 7:
                         span.end();
                         return [7 /*endfinally*/];
@@ -22316,17 +27766,18 @@ var PageBlobClient = /** @class */ (function (_super) {
      * @memberof PageBlobClient
      */
     PageBlobClient.prototype.create = function (size, options) {
+        var _a;
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_28;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            var _b, span, spanOptions, e_34;
+            return tslib.__generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         options.conditions = options.conditions || {};
-                        _a = createSpan("PageBlobClient-create", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
-                        _b.label = 1;
+                        _b = createSpan("PageBlobClient-create", options.tracingOptions), span = _b.span, spanOptions = _b.spanOptions;
+                        _c.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _c.trys.push([1, 3, 4, 5]);
                         ensureCpkIfSpecified(options.customerProvidedKey, this.isHttps);
                         return [4 /*yield*/, this.pageBlobContext.create(0, size, {
                                 abortSignal: options.abortSignal,
@@ -22334,20 +27785,72 @@ var PageBlobClient = /** @class */ (function (_super) {
                                 blobSequenceNumber: options.blobSequenceNumber,
                                 leaseAccessConditions: options.conditions,
                                 metadata: options.metadata,
-                                modifiedAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions }),
                                 cpkInfo: options.customerProvidedKey,
                                 encryptionScope: options.encryptionScope,
                                 tier: toAccessTier(options.tier),
+                                blobTagsString: toBlobTagsString(options.tags),
                                 spanOptions: spanOptions
                             })];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 2: return [2 /*return*/, _c.sent()];
                     case 3:
-                        e_28 = _b.sent();
+                        e_34 = _c.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_28.message
+                            message: e_34.message
                         });
-                        throw e_28;
+                        throw e_34;
+                    case 4:
+                        span.end();
+                        return [7 /*endfinally*/];
+                    case 5: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    /**
+     * Creates a page blob of the specified length. Call uploadPages to upload data
+     * data to a page blob. If the blob with the same name already exists, the content
+     * of the existing blob will remain unchanged.
+     * @see https://docs.microsoft.com/rest/api/storageservices/put-blob
+     *
+     * @param {number} size size of the page blob.
+     * @param {PageBlobCreateIfNotExistsOptions} [options]
+     * @returns {Promise<PageBlobCreateIfNotExistsResponse>}
+     * @memberof PageBlobClient
+     */
+    PageBlobClient.prototype.createIfNotExists = function (size, options) {
+        var _a, _b;
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var _c, span, spanOptions, conditions, res, e_35;
+            return tslib.__generator(this, function (_d) {
+                switch (_d.label) {
+                    case 0:
+                        _c = createSpan("PageBlobClient-createIfNotExists", options.tracingOptions), span = _c.span, spanOptions = _c.spanOptions;
+                        _d.label = 1;
+                    case 1:
+                        _d.trys.push([1, 3, 4, 5]);
+                        conditions = { ifNoneMatch: ETagAny };
+                        return [4 /*yield*/, this.create(size, tslib.__assign(tslib.__assign({}, options), { conditions: conditions, tracingOptions: tslib.__assign(tslib.__assign({}, options.tracingOptions), { spanOptions: spanOptions }) }))];
+                    case 2:
+                        res = _d.sent();
+                        return [2 /*return*/, tslib.__assign(tslib.__assign({ succeeded: true }, res), { _response: res._response // _response is made non-enumerable
+                             })];
+                    case 3:
+                        e_35 = _d.sent();
+                        if (((_a = e_35.details) === null || _a === void 0 ? void 0 : _a.errorCode) === "BlobAlreadyExists") {
+                            span.setStatus({
+                                code: api.CanonicalCode.ALREADY_EXISTS,
+                                message: "Expected exception when creating a blob only if it does not already exist."
+                            });
+                            return [2 /*return*/, tslib.__assign(tslib.__assign({ succeeded: false }, (_b = e_35.response) === null || _b === void 0 ? void 0 : _b.parsedHeaders), { _response: e_35.response })];
+                        }
+                        span.setStatus({
+                            code: api.CanonicalCode.UNKNOWN,
+                            message: e_35.message
+                        });
+                        throw e_35;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -22368,22 +27871,23 @@ var PageBlobClient = /** @class */ (function (_super) {
      * @memberof PageBlobClient
      */
     PageBlobClient.prototype.uploadPages = function (body, offset, count, options) {
+        var _a;
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_29;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            var _b, span, spanOptions, e_36;
+            return tslib.__generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         options.conditions = options.conditions || {};
-                        _a = createSpan("PageBlobClient-uploadPages", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
-                        _b.label = 1;
+                        _b = createSpan("PageBlobClient-uploadPages", options.tracingOptions), span = _b.span, spanOptions = _b.spanOptions;
+                        _c.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _c.trys.push([1, 3, 4, 5]);
                         ensureCpkIfSpecified(options.customerProvidedKey, this.isHttps);
                         return [4 /*yield*/, this.pageBlobContext.uploadPages(body, count, {
                                 abortSignal: options.abortSignal,
                                 leaseAccessConditions: options.conditions,
-                                modifiedAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions }),
                                 onUploadProgress: options.onProgress,
                                 range: rangeToString({ offset: offset, count: count }),
                                 sequenceNumberAccessConditions: options.conditions,
@@ -22393,14 +27897,14 @@ var PageBlobClient = /** @class */ (function (_super) {
                                 encryptionScope: options.encryptionScope,
                                 spanOptions: spanOptions
                             })];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 2: return [2 /*return*/, _c.sent()];
                     case 3:
-                        e_29 = _b.sent();
+                        e_36 = _c.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_29.message
+                            message: e_36.message
                         });
-                        throw e_29;
+                        throw e_36;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -22423,18 +27927,19 @@ var PageBlobClient = /** @class */ (function (_super) {
      * @memberof PageBlobClient
      */
     PageBlobClient.prototype.uploadPagesFromURL = function (sourceURL, sourceOffset, destOffset, count, options) {
+        var _a;
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_30;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            var _b, span, spanOptions, e_37;
+            return tslib.__generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         options.conditions = options.conditions || {};
                         options.sourceConditions = options.sourceConditions || {};
-                        _a = createSpan("PageBlobClient-uploadPagesFromURL", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
-                        _b.label = 1;
+                        _b = createSpan("PageBlobClient-uploadPagesFromURL", options.tracingOptions), span = _b.span, spanOptions = _b.spanOptions;
+                        _c.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _c.trys.push([1, 3, 4, 5]);
                         ensureCpkIfSpecified(options.customerProvidedKey, this.isHttps);
                         return [4 /*yield*/, this.pageBlobContext.uploadPagesFromURL(sourceURL, rangeToString({ offset: sourceOffset, count: count }), 0, rangeToString({ offset: destOffset, count: count }), {
                                 abortSignal: options.abortSignal,
@@ -22442,7 +27947,7 @@ var PageBlobClient = /** @class */ (function (_super) {
                                 sourceContentCrc64: options.sourceContentCrc64,
                                 leaseAccessConditions: options.conditions,
                                 sequenceNumberAccessConditions: options.conditions,
-                                modifiedAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions }),
                                 sourceModifiedAccessConditions: {
                                     sourceIfMatch: options.sourceConditions.ifMatch,
                                     sourceIfModifiedSince: options.sourceConditions.ifModifiedSince,
@@ -22453,14 +27958,14 @@ var PageBlobClient = /** @class */ (function (_super) {
                                 encryptionScope: options.encryptionScope,
                                 spanOptions: spanOptions
                             })];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 2: return [2 /*return*/, _c.sent()];
                     case 3:
-                        e_30 = _b.sent();
+                        e_37 = _c.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_30.message
+                            message: e_37.message
                         });
-                        throw e_30;
+                        throw e_37;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -22480,36 +27985,37 @@ var PageBlobClient = /** @class */ (function (_super) {
      * @memberof PageBlobClient
      */
     PageBlobClient.prototype.clearPages = function (offset, count, options) {
+        var _a;
         if (offset === void 0) { offset = 0; }
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_31;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            var _b, span, spanOptions, e_38;
+            return tslib.__generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         options.conditions = options.conditions || {};
-                        _a = createSpan("PageBlobClient-clearPages", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
-                        _b.label = 1;
+                        _b = createSpan("PageBlobClient-clearPages", options.tracingOptions), span = _b.span, spanOptions = _b.spanOptions;
+                        _c.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _c.trys.push([1, 3, 4, 5]);
                         return [4 /*yield*/, this.pageBlobContext.clearPages(0, {
                                 abortSignal: options.abortSignal,
                                 leaseAccessConditions: options.conditions,
-                                modifiedAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions }),
                                 range: rangeToString({ offset: offset, count: count }),
                                 sequenceNumberAccessConditions: options.conditions,
                                 cpkInfo: options.customerProvidedKey,
                                 encryptionScope: options.encryptionScope,
                                 spanOptions: spanOptions
                             })];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 2: return [2 /*return*/, _c.sent()];
                     case 3:
-                        e_31 = _b.sent();
+                        e_38 = _c.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_31.message
+                            message: e_38.message
                         });
-                        throw e_31;
+                        throw e_38;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -22529,35 +28035,36 @@ var PageBlobClient = /** @class */ (function (_super) {
      * @memberof PageBlobClient
      */
     PageBlobClient.prototype.getPageRanges = function (offset, count, options) {
+        var _a;
         if (offset === void 0) { offset = 0; }
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_32;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            var _b, span, spanOptions, e_39;
+            return tslib.__generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         options.conditions = options.conditions || {};
-                        _a = createSpan("PageBlobClient-getPageRanges", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
-                        _b.label = 1;
+                        _b = createSpan("PageBlobClient-getPageRanges", options.tracingOptions), span = _b.span, spanOptions = _b.spanOptions;
+                        _c.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _c.trys.push([1, 3, 4, 5]);
                         return [4 /*yield*/, this.pageBlobContext
                                 .getPageRanges({
                                 abortSignal: options.abortSignal,
                                 leaseAccessConditions: options.conditions,
-                                modifiedAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions }),
                                 range: rangeToString({ offset: offset, count: count }),
                                 spanOptions: spanOptions
                             })
                                 .then(rangeResponseFromModel)];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 2: return [2 /*return*/, _c.sent()];
                     case 3:
-                        e_32 = _b.sent();
+                        e_39 = _c.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_32.message
+                            message: e_39.message
                         });
-                        throw e_32;
+                        throw e_39;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -22572,41 +28079,42 @@ var PageBlobClient = /** @class */ (function (_super) {
      *
      * @param {number} offset Starting byte position of the page blob
      * @param {number} count Number of bytes to get ranges diff.
-     * @param {string} prevSnapshot Timestamp of snapshot to retrive the difference.
+     * @param {string} prevSnapshot Timestamp of snapshot to retrieve the difference.
      * @param {PageBlobGetPageRangesDiffOptions} [options] Options to the Page Blob Get Page Ranges Diff operation.
      * @returns {Promise<PageBlobGetPageRangesDiffResponse>} Response data for the Page Blob Get Page Range Diff operation.
      * @memberof PageBlobClient
      */
     PageBlobClient.prototype.getPageRangesDiff = function (offset, count, prevSnapshot, options) {
+        var _a;
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_33;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            var _b, span, spanOptions, e_40;
+            return tslib.__generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         options.conditions = options.conditions || {};
-                        _a = createSpan("PageBlobClient-getPageRangesDiff", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
-                        _b.label = 1;
+                        _b = createSpan("PageBlobClient-getPageRangesDiff", options.tracingOptions), span = _b.span, spanOptions = _b.spanOptions;
+                        _c.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _c.trys.push([1, 3, 4, 5]);
                         return [4 /*yield*/, this.pageBlobContext
                                 .getPageRangesDiff({
                                 abortSignal: options.abortSignal,
                                 leaseAccessConditions: options.conditions,
-                                modifiedAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions }),
                                 prevsnapshot: prevSnapshot,
                                 range: rangeToString({ offset: offset, count: count }),
                                 spanOptions: spanOptions
                             })
                                 .then(rangeResponseFromModel)];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 2: return [2 /*return*/, _c.sent()];
                     case 3:
-                        e_33 = _b.sent();
+                        e_40 = _c.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_33.message
+                            message: e_40.message
                         });
-                        throw e_33;
+                        throw e_40;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -22621,41 +28129,42 @@ var PageBlobClient = /** @class */ (function (_super) {
      *
      * @param {number} offset Starting byte position of the page blob
      * @param {number} count Number of bytes to get ranges diff.
-     * @param {string} prevSnapshotUrl URL of snapshot to retrive the difference.
+     * @param {string} prevSnapshotUrl URL of snapshot to retrieve the difference.
      * @param {PageBlobGetPageRangesDiffOptions} [options] Options to the Page Blob Get Page Ranges Diff operation.
      * @returns {Promise<PageBlobGetPageRangesDiffResponse>} Response data for the Page Blob Get Page Range Diff operation.
      * @memberof PageBlobClient
      */
     PageBlobClient.prototype.getPageRangesDiffForManagedDisks = function (offset, count, prevSnapshotUrl, options) {
+        var _a;
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_34;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            var _b, span, spanOptions, e_41;
+            return tslib.__generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         options.conditions = options.conditions || {};
-                        _a = createSpan("PageBlobClient-GetPageRangesDiffForManagedDisks", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
-                        _b.label = 1;
+                        _b = createSpan("PageBlobClient-GetPageRangesDiffForManagedDisks", options.tracingOptions), span = _b.span, spanOptions = _b.spanOptions;
+                        _c.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _c.trys.push([1, 3, 4, 5]);
                         return [4 /*yield*/, this.pageBlobContext
                                 .getPageRangesDiff({
                                 abortSignal: options.abortSignal,
                                 leaseAccessConditions: options.conditions,
-                                modifiedAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions }),
                                 prevSnapshotUrl: prevSnapshotUrl,
                                 range: rangeToString({ offset: offset, count: count }),
                                 spanOptions: spanOptions
                             })
                                 .then(rangeResponseFromModel)];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 2: return [2 /*return*/, _c.sent()];
                     case 3:
-                        e_34 = _b.sent();
+                        e_41 = _c.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_34.message
+                            message: e_41.message
                         });
-                        throw e_34;
+                        throw e_41;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -22674,32 +28183,33 @@ var PageBlobClient = /** @class */ (function (_super) {
      * @memberof PageBlobClient
      */
     PageBlobClient.prototype.resize = function (size, options) {
+        var _a;
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_35;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            var _b, span, spanOptions, e_42;
+            return tslib.__generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         options.conditions = options.conditions || {};
-                        _a = createSpan("PageBlobClient-resize", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
-                        _b.label = 1;
+                        _b = createSpan("PageBlobClient-resize", options.tracingOptions), span = _b.span, spanOptions = _b.spanOptions;
+                        _c.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _c.trys.push([1, 3, 4, 5]);
                         return [4 /*yield*/, this.pageBlobContext.resize(size, {
                                 abortSignal: options.abortSignal,
                                 leaseAccessConditions: options.conditions,
-                                modifiedAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions }),
                                 encryptionScope: options.encryptionScope,
                                 spanOptions: spanOptions
                             })];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 2: return [2 /*return*/, _c.sent()];
                     case 3:
-                        e_35 = _b.sent();
+                        e_42 = _c.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_35.message
+                            message: e_42.message
                         });
-                        throw e_35;
+                        throw e_42;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -22719,32 +28229,33 @@ var PageBlobClient = /** @class */ (function (_super) {
      * @memberof PageBlobClient
      */
     PageBlobClient.prototype.updateSequenceNumber = function (sequenceNumberAction, sequenceNumber, options) {
+        var _a;
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_36;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            var _b, span, spanOptions, e_43;
+            return tslib.__generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         options.conditions = options.conditions || {};
-                        _a = createSpan("PageBlobClient-updateSequenceNumber", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
-                        _b.label = 1;
+                        _b = createSpan("PageBlobClient-updateSequenceNumber", options.tracingOptions), span = _b.span, spanOptions = _b.spanOptions;
+                        _c.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _c.trys.push([1, 3, 4, 5]);
                         return [4 /*yield*/, this.pageBlobContext.updateSequenceNumber(sequenceNumberAction, {
                                 abortSignal: options.abortSignal,
                                 blobSequenceNumber: sequenceNumber,
                                 leaseAccessConditions: options.conditions,
-                                modifiedAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions }),
                                 spanOptions: spanOptions
                             })];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 2: return [2 /*return*/, _c.sent()];
                     case 3:
-                        e_36 = _b.sent();
+                        e_43 = _c.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_36.message
+                            message: e_43.message
                         });
-                        throw e_36;
+                        throw e_43;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -22768,29 +28279,30 @@ var PageBlobClient = /** @class */ (function (_super) {
      * @memberof PageBlobClient
      */
     PageBlobClient.prototype.startCopyIncremental = function (copySource, options) {
+        var _a;
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_37;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            var _b, span, spanOptions, e_44;
+            return tslib.__generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
-                        _a = createSpan("PageBlobClient-startCopyIncremental", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
-                        _b.label = 1;
+                        _b = createSpan("PageBlobClient-startCopyIncremental", options.tracingOptions), span = _b.span, spanOptions = _b.spanOptions;
+                        _c.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _c.trys.push([1, 3, 4, 5]);
                         return [4 /*yield*/, this.pageBlobContext.copyIncremental(copySource, {
                                 abortSignal: options.abortSignal,
-                                modifiedAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_a = options.conditions) === null || _a === void 0 ? void 0 : _a.tagConditions }),
                                 spanOptions: spanOptions
                             })];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 2: return [2 /*return*/, _c.sent()];
                     case 3:
-                        e_37 = _b.sent();
+                        e_44 = _c.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_37.message
+                            message: e_44.message
                         });
-                        throw e_37;
+                        throw e_44;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -22818,9 +28330,11 @@ var BlobLeaseClient = /** @class */ (function () {
         var clientContext = new StorageClientContext(client.url, client.pipeline.toServiceClientOptions());
         this._url = client.url;
         if (client instanceof ContainerClient) {
+            this._isContainer = true;
             this._containerOrBlobOperation = new Container(clientContext);
         }
         else {
+            this._isContainer = false;
             this._containerOrBlobOperation = new Blob$1(clientContext);
         }
         if (!leaseId) {
@@ -22839,7 +28353,7 @@ var BlobLeaseClient = /** @class */ (function () {
         get: function () {
             return this._leaseId;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(BlobLeaseClient.prototype, "url", {
@@ -22853,7 +28367,7 @@ var BlobLeaseClient = /** @class */ (function () {
         get: function () {
             return this._url;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     /**
@@ -22870,31 +28384,37 @@ var BlobLeaseClient = /** @class */ (function () {
      * @memberof BlobLeaseClient
      */
     BlobLeaseClient.prototype.acquireLease = function (duration, options) {
+        var _a, _b, _c, _d, _e, _f;
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_38;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            var _g, span, spanOptions, e_45;
+            return tslib.__generator(this, function (_h) {
+                switch (_h.label) {
                     case 0:
-                        _a = createSpan("BlobLeaseClient-acquireLease", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
-                        _b.label = 1;
+                        _g = createSpan("BlobLeaseClient-acquireLease", options.tracingOptions), span = _g.span, spanOptions = _g.spanOptions;
+                        if (this._isContainer &&
+                            ((((_a = options.conditions) === null || _a === void 0 ? void 0 : _a.ifMatch) && ((_b = options.conditions) === null || _b === void 0 ? void 0 : _b.ifMatch) !== ETagNone) ||
+                                (((_c = options.conditions) === null || _c === void 0 ? void 0 : _c.ifNoneMatch) && ((_d = options.conditions) === null || _d === void 0 ? void 0 : _d.ifNoneMatch) !== ETagNone) || ((_e = options.conditions) === null || _e === void 0 ? void 0 : _e.tagConditions))) {
+                            throw new RangeError("The IfMatch, IfNoneMatch and tags access conditions are ignored by the service. Values other than undefined or their default values are not acceptable.");
+                        }
+                        _h.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _h.trys.push([1, 3, 4, 5]);
                         return [4 /*yield*/, this._containerOrBlobOperation.acquireLease({
                                 abortSignal: options.abortSignal,
                                 duration: duration,
-                                modifiedAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_f = options.conditions) === null || _f === void 0 ? void 0 : _f.tagConditions }),
                                 proposedLeaseId: this._leaseId,
                                 spanOptions: spanOptions
                             })];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 2: return [2 /*return*/, _h.sent()];
                     case 3:
-                        e_38 = _b.sent();
+                        e_45 = _h.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_38.message
+                            message: e_45.message
                         });
-                        throw e_38;
+                        throw e_45;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -22915,32 +28435,38 @@ var BlobLeaseClient = /** @class */ (function () {
      * @memberof BlobLeaseClient
      */
     BlobLeaseClient.prototype.changeLease = function (proposedLeaseId, options) {
+        var _a, _b, _c, _d, _e, _f;
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, response, e_39;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            var _g, span, spanOptions, response, e_46;
+            return tslib.__generator(this, function (_h) {
+                switch (_h.label) {
                     case 0:
-                        _a = createSpan("BlobLeaseClient-changeLease", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
-                        _b.label = 1;
+                        _g = createSpan("BlobLeaseClient-changeLease", options.tracingOptions), span = _g.span, spanOptions = _g.spanOptions;
+                        if (this._isContainer &&
+                            ((((_a = options.conditions) === null || _a === void 0 ? void 0 : _a.ifMatch) && ((_b = options.conditions) === null || _b === void 0 ? void 0 : _b.ifMatch) !== ETagNone) ||
+                                (((_c = options.conditions) === null || _c === void 0 ? void 0 : _c.ifNoneMatch) && ((_d = options.conditions) === null || _d === void 0 ? void 0 : _d.ifNoneMatch) !== ETagNone) || ((_e = options.conditions) === null || _e === void 0 ? void 0 : _e.tagConditions))) {
+                            throw new RangeError("The IfMatch, IfNoneMatch and tags access conditions are ignored by the service. Values other than undefined or their default values are not acceptable.");
+                        }
+                        _h.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _h.trys.push([1, 3, 4, 5]);
                         return [4 /*yield*/, this._containerOrBlobOperation.changeLease(this._leaseId, proposedLeaseId, {
                                 abortSignal: options.abortSignal,
-                                modifiedAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_f = options.conditions) === null || _f === void 0 ? void 0 : _f.tagConditions }),
                                 spanOptions: spanOptions
                             })];
                     case 2:
-                        response = _b.sent();
+                        response = _h.sent();
                         this._leaseId = proposedLeaseId;
                         return [2 /*return*/, response];
                     case 3:
-                        e_39 = _b.sent();
+                        e_46 = _h.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_39.message
+                            message: e_46.message
                         });
-                        throw e_39;
+                        throw e_46;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -22961,29 +28487,35 @@ var BlobLeaseClient = /** @class */ (function () {
      * @memberof BlobLeaseClient
      */
     BlobLeaseClient.prototype.releaseLease = function (options) {
+        var _a, _b, _c, _d, _e, _f;
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_40;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            var _g, span, spanOptions, e_47;
+            return tslib.__generator(this, function (_h) {
+                switch (_h.label) {
                     case 0:
-                        _a = createSpan("BlobLeaseClient-releaseLease", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
-                        _b.label = 1;
+                        _g = createSpan("BlobLeaseClient-releaseLease", options.tracingOptions), span = _g.span, spanOptions = _g.spanOptions;
+                        if (this._isContainer &&
+                            ((((_a = options.conditions) === null || _a === void 0 ? void 0 : _a.ifMatch) && ((_b = options.conditions) === null || _b === void 0 ? void 0 : _b.ifMatch) !== ETagNone) ||
+                                (((_c = options.conditions) === null || _c === void 0 ? void 0 : _c.ifNoneMatch) && ((_d = options.conditions) === null || _d === void 0 ? void 0 : _d.ifNoneMatch) !== ETagNone) || ((_e = options.conditions) === null || _e === void 0 ? void 0 : _e.tagConditions))) {
+                            throw new RangeError("The IfMatch, IfNoneMatch and tags access conditions are ignored by the service. Values other than undefined or their default values are not acceptable.");
+                        }
+                        _h.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _h.trys.push([1, 3, 4, 5]);
                         return [4 /*yield*/, this._containerOrBlobOperation.releaseLease(this._leaseId, {
                                 abortSignal: options.abortSignal,
-                                modifiedAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_f = options.conditions) === null || _f === void 0 ? void 0 : _f.tagConditions }),
                                 spanOptions: spanOptions
                             })];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 2: return [2 /*return*/, _h.sent()];
                     case 3:
-                        e_40 = _b.sent();
+                        e_47 = _h.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_40.message
+                            message: e_47.message
                         });
-                        throw e_40;
+                        throw e_47;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -23003,29 +28535,35 @@ var BlobLeaseClient = /** @class */ (function () {
      * @memberof BlobLeaseClient
      */
     BlobLeaseClient.prototype.renewLease = function (options) {
+        var _a, _b, _c, _d, _e, _f;
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_41;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            var _g, span, spanOptions, e_48;
+            return tslib.__generator(this, function (_h) {
+                switch (_h.label) {
                     case 0:
-                        _a = createSpan("BlobLeaseClient-renewLease", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
-                        _b.label = 1;
+                        _g = createSpan("BlobLeaseClient-renewLease", options.tracingOptions), span = _g.span, spanOptions = _g.spanOptions;
+                        if (this._isContainer &&
+                            ((((_a = options.conditions) === null || _a === void 0 ? void 0 : _a.ifMatch) && ((_b = options.conditions) === null || _b === void 0 ? void 0 : _b.ifMatch) !== ETagNone) ||
+                                (((_c = options.conditions) === null || _c === void 0 ? void 0 : _c.ifNoneMatch) && ((_d = options.conditions) === null || _d === void 0 ? void 0 : _d.ifNoneMatch) !== ETagNone) || ((_e = options.conditions) === null || _e === void 0 ? void 0 : _e.tagConditions))) {
+                            throw new RangeError("The IfMatch, IfNoneMatch and tags access conditions are ignored by the service. Values other than undefined or their default values are not acceptable.");
+                        }
+                        _h.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _h.trys.push([1, 3, 4, 5]);
                         return [4 /*yield*/, this._containerOrBlobOperation.renewLease(this._leaseId, {
                                 abortSignal: options.abortSignal,
-                                modifiedAccessConditions: options.conditions,
+                                modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_f = options.conditions) === null || _f === void 0 ? void 0 : _f.tagConditions }),
                                 spanOptions: spanOptions
                             })];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 2: return [2 /*return*/, _h.sent()];
                     case 3:
-                        e_41 = _b.sent();
+                        e_48 = _h.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_41.message
+                            message: e_48.message
                         });
-                        throw e_41;
+                        throw e_48;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -23048,31 +28586,37 @@ var BlobLeaseClient = /** @class */ (function () {
      * @memberof BlobLeaseClient
      */
     BlobLeaseClient.prototype.breakLease = function (breakPeriod, options) {
+        var _a, _b, _c, _d, _e, _f;
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, operationOptions, e_42;
-            return tslib.__generator(this, function (_b) {
-                switch (_b.label) {
+            var _g, span, spanOptions, operationOptions, e_49;
+            return tslib.__generator(this, function (_h) {
+                switch (_h.label) {
                     case 0:
-                        _a = createSpan("BlobLeaseClient-breakLease", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
-                        _b.label = 1;
+                        _g = createSpan("BlobLeaseClient-breakLease", options.tracingOptions), span = _g.span, spanOptions = _g.spanOptions;
+                        if (this._isContainer &&
+                            ((((_a = options.conditions) === null || _a === void 0 ? void 0 : _a.ifMatch) && ((_b = options.conditions) === null || _b === void 0 ? void 0 : _b.ifMatch) !== ETagNone) ||
+                                (((_c = options.conditions) === null || _c === void 0 ? void 0 : _c.ifNoneMatch) && ((_d = options.conditions) === null || _d === void 0 ? void 0 : _d.ifNoneMatch) !== ETagNone) || ((_e = options.conditions) === null || _e === void 0 ? void 0 : _e.tagConditions))) {
+                            throw new RangeError("The IfMatch, IfNoneMatch and tags access conditions are ignored by the service. Values other than undefined or their default values are not acceptable.");
+                        }
+                        _h.label = 1;
                     case 1:
-                        _b.trys.push([1, 3, 4, 5]);
+                        _h.trys.push([1, 3, 4, 5]);
                         operationOptions = {
                             abortSignal: options.abortSignal,
                             breakPeriod: breakPeriod,
-                            modifiedAccessConditions: options.conditions,
+                            modifiedAccessConditions: tslib.__assign(tslib.__assign({}, options.conditions), { ifTags: (_f = options.conditions) === null || _f === void 0 ? void 0 : _f.tagConditions }),
                             spanOptions: spanOptions
                         };
                         return [4 /*yield*/, this._containerOrBlobOperation.breakLease(operationOptions)];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 2: return [2 /*return*/, _h.sent()];
                     case 3:
-                        e_42 = _b.sent();
+                        e_49 = _h.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_42.message
+                            message: e_49.message
                         });
-                        throw e_42;
+                        throw e_49;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -23154,7 +28698,7 @@ var ContainerClient = /** @class */ (function (_super) {
         get: function () {
             return this._containerName;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     /**
@@ -23177,7 +28721,7 @@ var ContainerClient = /** @class */ (function (_super) {
     ContainerClient.prototype.create = function (options) {
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_43;
+            var _a, span, spanOptions, e_50;
             return tslib.__generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -23191,12 +28735,12 @@ var ContainerClient = /** @class */ (function (_super) {
                     // this will filter out unwanted properties from the response object into result object
                     return [2 /*return*/, _b.sent()];
                     case 3:
-                        e_43 = _b.sent();
+                        e_50 = _b.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_43.message
+                            message: e_50.message
                         });
-                        throw e_43;
+                        throw e_50;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -23206,7 +28750,55 @@ var ContainerClient = /** @class */ (function (_super) {
         });
     };
     /**
-     * Returns true if the Azrue container resource represented by this client exists; false otherwise.
+     * Creates a new container under the specified account. If the container with
+     * the same name already exists, it is not changed.
+     * @see https://docs.microsoft.com/en-us/rest/api/storageservices/create-container
+     *
+     * @param {ContainerCreateOptions} [options]
+     * @returns {Promise<ContainerCreateIfNotExistsResponse>}
+     * @memberof ContainerClient
+     */
+    ContainerClient.prototype.createIfNotExists = function (options) {
+        var _a, _b;
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var _c, span, spanOptions, res, e_51;
+            return tslib.__generator(this, function (_d) {
+                switch (_d.label) {
+                    case 0:
+                        _c = createSpan("ContainerClient-createIfNotExists", options.tracingOptions), span = _c.span, spanOptions = _c.spanOptions;
+                        _d.label = 1;
+                    case 1:
+                        _d.trys.push([1, 3, 4, 5]);
+                        return [4 /*yield*/, this.create(tslib.__assign(tslib.__assign({}, options), { tracingOptions: tslib.__assign(tslib.__assign({}, options.tracingOptions), { spanOptions: spanOptions }) }))];
+                    case 2:
+                        res = _d.sent();
+                        return [2 /*return*/, tslib.__assign(tslib.__assign({ succeeded: true }, res), { _response: res._response // _response is made non-enumerable
+                             })];
+                    case 3:
+                        e_51 = _d.sent();
+                        if (((_a = e_51.details) === null || _a === void 0 ? void 0 : _a.errorCode) === "ContainerAlreadyExists") {
+                            span.setStatus({
+                                code: api.CanonicalCode.ALREADY_EXISTS,
+                                message: "Expected exception when creating a container only if it does not already exist."
+                            });
+                            return [2 /*return*/, tslib.__assign(tslib.__assign({ succeeded: false }, (_b = e_51.response) === null || _b === void 0 ? void 0 : _b.parsedHeaders), { _response: e_51.response })];
+                        }
+                        span.setStatus({
+                            code: api.CanonicalCode.UNKNOWN,
+                            message: e_51.message
+                        });
+                        throw e_51;
+                    case 4:
+                        span.end();
+                        return [7 /*endfinally*/];
+                    case 5: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    /**
+     * Returns true if the Azure container resource represented by this client exists; false otherwise.
      *
      * NOTE: use this function with care since an existing container might be deleted by other clients or
      * applications. Vice versa new containers with the same name might be added by other clients or
@@ -23219,7 +28811,7 @@ var ContainerClient = /** @class */ (function (_super) {
     ContainerClient.prototype.exists = function (options) {
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_44;
+            var _a, span, spanOptions, e_52;
             return tslib.__generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -23235,8 +28827,8 @@ var ContainerClient = /** @class */ (function (_super) {
                         _b.sent();
                         return [2 /*return*/, true];
                     case 3:
-                        e_44 = _b.sent();
-                        if (e_44.statusCode === 404) {
+                        e_52 = _b.sent();
+                        if (e_52.statusCode === 404) {
                             span.setStatus({
                                 code: api.CanonicalCode.NOT_FOUND,
                                 message: "Expected exception when checking container existence"
@@ -23245,9 +28837,9 @@ var ContainerClient = /** @class */ (function (_super) {
                         }
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_44.message
+                            message: e_52.message
                         });
-                        throw e_44;
+                        throw e_52;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -23322,7 +28914,7 @@ var ContainerClient = /** @class */ (function (_super) {
     ContainerClient.prototype.getProperties = function (options) {
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_45;
+            var _a, span, spanOptions, e_53;
             return tslib.__generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -23336,12 +28928,12 @@ var ContainerClient = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.containerContext.getProperties(tslib.__assign(tslib.__assign({ abortSignal: options.abortSignal }, options.conditions), { spanOptions: spanOptions }))];
                     case 2: return [2 /*return*/, _b.sent()];
                     case 3:
-                        e_45 = _b.sent();
+                        e_53 = _b.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_45.message
+                            message: e_53.message
                         });
-                        throw e_45;
+                        throw e_53;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -23362,17 +28954,12 @@ var ContainerClient = /** @class */ (function (_super) {
     ContainerClient.prototype.delete = function (options) {
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_46;
+            var _a, span, spanOptions, e_54;
             return tslib.__generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         if (!options.conditions) {
                             options.conditions = {};
-                        }
-                        if ((options.conditions.ifMatch && options.conditions.ifMatch !== ETagNone) ||
-                            (options.conditions.ifNoneMatch && options.conditions.ifNoneMatch !== ETagNone)) {
-                            throw new RangeError("the IfMatch and IfNoneMatch access conditions must have their default\
-        values because they are ignored by the service");
                         }
                         _a = createSpan("ContainerClient-delete", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
                         _b.label = 1;
@@ -23386,12 +28973,60 @@ var ContainerClient = /** @class */ (function (_super) {
                             })];
                     case 2: return [2 /*return*/, _b.sent()];
                     case 3:
-                        e_46 = _b.sent();
+                        e_54 = _b.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_46.message
+                            message: e_54.message
                         });
-                        throw e_46;
+                        throw e_54;
+                    case 4:
+                        span.end();
+                        return [7 /*endfinally*/];
+                    case 5: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    /**
+     * Marks the specified container for deletion if it exists. The container and any blobs
+     * contained within it are later deleted during garbage collection.
+     * @see https://docs.microsoft.com/en-us/rest/api/storageservices/delete-container
+     *
+     * @param {ContainerDeleteMethodOptions} [options] Options to Container Delete operation.
+     * @returns {Promise<ContainerDeleteIfExistsResponse>}
+     * @memberof ContainerClient
+     */
+    ContainerClient.prototype.deleteIfExists = function (options) {
+        var _a, _b;
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var _c, span, spanOptions, res, e_55;
+            return tslib.__generator(this, function (_d) {
+                switch (_d.label) {
+                    case 0:
+                        _c = createSpan("ContainerClient-deleteIfExists", options.tracingOptions), span = _c.span, spanOptions = _c.spanOptions;
+                        _d.label = 1;
+                    case 1:
+                        _d.trys.push([1, 3, 4, 5]);
+                        return [4 /*yield*/, this.delete(tslib.__assign(tslib.__assign({}, options), { tracingOptions: tslib.__assign(tslib.__assign({}, options.tracingOptions), { spanOptions: spanOptions }) }))];
+                    case 2:
+                        res = _d.sent();
+                        return [2 /*return*/, tslib.__assign(tslib.__assign({ succeeded: true }, res), { _response: res._response // _response is made non-enumerable
+                             })];
+                    case 3:
+                        e_55 = _d.sent();
+                        if (((_a = e_55.details) === null || _a === void 0 ? void 0 : _a.errorCode) === "ContainerNotFound") {
+                            span.setStatus({
+                                code: api.CanonicalCode.NOT_FOUND,
+                                message: "Expected exception when deleting a container only if it exists."
+                            });
+                            return [2 /*return*/, tslib.__assign(tslib.__assign({ succeeded: false }, (_b = e_55.response) === null || _b === void 0 ? void 0 : _b.parsedHeaders), { _response: e_55.response })];
+                        }
+                        span.setStatus({
+                            code: api.CanonicalCode.UNKNOWN,
+                            message: e_55.message
+                        });
+                        throw e_55;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -23417,18 +29052,15 @@ var ContainerClient = /** @class */ (function (_super) {
     ContainerClient.prototype.setMetadata = function (metadata, options) {
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_47;
+            var _a, span, spanOptions, e_56;
             return tslib.__generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         if (!options.conditions) {
                             options.conditions = {};
                         }
-                        if (options.conditions.ifUnmodifiedSince ||
-                            (options.conditions.ifMatch && options.conditions.ifMatch !== ETagNone) ||
-                            (options.conditions.ifNoneMatch && options.conditions.ifNoneMatch !== ETagNone)) {
-                            throw new RangeError("the IfUnmodifiedSince, IfMatch, and IfNoneMatch must have their default values\
-        because they are ignored by the blob service");
+                        if (options.conditions.ifUnmodifiedSince) {
+                            throw new RangeError("the IfUnmodifiedSince must have their default values because they are ignored by the blob service");
                         }
                         _a = createSpan("ContainerClient-setMetadata", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
                         _b.label = 1;
@@ -23443,12 +29075,12 @@ var ContainerClient = /** @class */ (function (_super) {
                             })];
                     case 2: return [2 /*return*/, _b.sent()];
                     case 3:
-                        e_47 = _b.sent();
+                        e_56 = _b.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_47.message
+                            message: e_56.message
                         });
-                        throw e_47;
+                        throw e_56;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -23473,7 +29105,7 @@ var ContainerClient = /** @class */ (function (_super) {
     ContainerClient.prototype.getAccessPolicy = function (options) {
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, response, res, _i, response_1, identifier, accessPolicy, e_48;
+            var _a, span, spanOptions, response, res, _i, response_1, identifier, accessPolicy, e_57;
             return tslib.__generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -23524,12 +29156,12 @@ var ContainerClient = /** @class */ (function (_super) {
                         }
                         return [2 /*return*/, res];
                     case 3:
-                        e_48 = _b.sent();
+                        e_57 = _b.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_48.message
+                            message: e_57.message
                         });
-                        throw e_48;
+                        throw e_57;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -23560,7 +29192,7 @@ var ContainerClient = /** @class */ (function (_super) {
     ContainerClient.prototype.setAccessPolicy = function (access, containerAcl, options) {
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, acl, _i, _b, identifier, e_49;
+            var _a, span, spanOptions, acl, _i, _b, identifier, e_58;
             return tslib.__generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
@@ -23595,12 +29227,12 @@ var ContainerClient = /** @class */ (function (_super) {
                             })];
                     case 2: return [2 /*return*/, _c.sent()];
                     case 3:
-                        e_49 = _c.sent();
+                        e_58 = _c.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_49.message
+                            message: e_58.message
                         });
-                        throw e_49;
+                        throw e_58;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -23645,7 +29277,7 @@ var ContainerClient = /** @class */ (function (_super) {
     ContainerClient.prototype.uploadBlockBlob = function (blobName, body, contentLength, options) {
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, blockBlobClient, response, e_50;
+            var _a, span, spanOptions, blockBlobClient, response, e_59;
             return tslib.__generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -23662,12 +29294,12 @@ var ContainerClient = /** @class */ (function (_super) {
                                 response: response
                             }];
                     case 3:
-                        e_50 = _b.sent();
+                        e_59 = _b.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_50.message
+                            message: e_59.message
                         });
-                        throw e_50;
+                        throw e_59;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -23684,14 +29316,14 @@ var ContainerClient = /** @class */ (function (_super) {
      * @see https://docs.microsoft.com/en-us/rest/api/storageservices/delete-blob
      *
      * @param {string} blobName
-     * @param {BlobDeleteOptions} [options] Options to Blob Delete operation.
+     * @param {ContainerDeleteBlobOptions} [options] Options to Blob Delete operation.
      * @returns {Promise<BlobDeleteResponse>} Block blob deletion response data.
      * @memberof ContainerClient
      */
     ContainerClient.prototype.deleteBlob = function (blobName, options) {
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, blobClient, e_51;
+            var _a, span, spanOptions, blobClient, e_60;
             return tslib.__generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -23700,15 +29332,18 @@ var ContainerClient = /** @class */ (function (_super) {
                     case 1:
                         _b.trys.push([1, 3, 4, 5]);
                         blobClient = this.getBlobClient(blobName);
+                        if (options.versionId) {
+                            blobClient = blobClient.withVersion(options.versionId);
+                        }
                         return [4 /*yield*/, blobClient.delete(tslib.__assign(tslib.__assign({}, options), { tracingOptions: tslib.__assign(tslib.__assign({}, options.tracingOptions), { spanOptions: spanOptions }) }))];
                     case 2: return [2 /*return*/, _b.sent()];
                     case 3:
-                        e_51 = _b.sent();
+                        e_60 = _b.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_51.message
+                            message: e_60.message
                         });
-                        throw e_51;
+                        throw e_60;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -23732,7 +29367,7 @@ var ContainerClient = /** @class */ (function (_super) {
     ContainerClient.prototype.listBlobFlatSegment = function (marker, options) {
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_52;
+            var _a, span, spanOptions, response, wrappedResponse, e_61;
             return tslib.__generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -23741,14 +29376,20 @@ var ContainerClient = /** @class */ (function (_super) {
                     case 1:
                         _b.trys.push([1, 3, 4, 5]);
                         return [4 /*yield*/, this.containerContext.listBlobFlatSegment(tslib.__assign(tslib.__assign({ marker: marker }, options), { spanOptions: spanOptions }))];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 2:
+                        response = _b.sent();
+                        wrappedResponse = tslib.__assign(tslib.__assign({}, response), { _response: response._response, segment: tslib.__assign(tslib.__assign({}, response.segment), { blobItems: response.segment.blobItems.map(function (blobItemInteral) {
+                                    var blobItem = tslib.__assign(tslib.__assign({}, blobItemInteral), { tags: toTags(blobItemInteral.blobTags), objectReplicationSourceProperties: parseObjectReplicationRecord(blobItemInteral.objectReplicationMetadata) });
+                                    return blobItem;
+                                }) }) });
+                        return [2 /*return*/, wrappedResponse];
                     case 3:
-                        e_52 = _b.sent();
+                        e_61 = _b.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_52.message
+                            message: e_61.message
                         });
-                        throw e_52;
+                        throw e_61;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -23764,7 +29405,7 @@ var ContainerClient = /** @class */ (function (_super) {
      * again (passing the the previously-returned Marker) to get the next segment.
      * @see https://docs.microsoft.com/rest/api/storageservices/list-blobs
      *
-     * @param {string} delimiter The charactor or string used to define the virtual hierarchy
+     * @param {string} delimiter The character or string used to define the virtual hierarchy
      * @param {string} [marker] A string value that identifies the portion of the list to be returned with the next list operation.
      * @param {ContainerListBlobsSegmentOptions} [options] Options to Container List Blob Hierarchy Segment operation.
      * @returns {Promise<ContainerListBlobHierarchySegmentResponse>}
@@ -23773,7 +29414,7 @@ var ContainerClient = /** @class */ (function (_super) {
     ContainerClient.prototype.listBlobHierarchySegment = function (delimiter, marker, options) {
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, e_53;
+            var _a, span, spanOptions, response, wrappedResponse, e_62;
             return tslib.__generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -23782,14 +29423,20 @@ var ContainerClient = /** @class */ (function (_super) {
                     case 1:
                         _b.trys.push([1, 3, 4, 5]);
                         return [4 /*yield*/, this.containerContext.listBlobHierarchySegment(delimiter, tslib.__assign(tslib.__assign({ marker: marker }, options), { spanOptions: spanOptions }))];
-                    case 2: return [2 /*return*/, _b.sent()];
+                    case 2:
+                        response = _b.sent();
+                        wrappedResponse = tslib.__assign(tslib.__assign({}, response), { _response: response._response, segment: tslib.__assign(tslib.__assign({}, response.segment), { blobItems: response.segment.blobItems.map(function (blobItemInteral) {
+                                    var blobItem = tslib.__assign(tslib.__assign({}, blobItemInteral), { tags: toTags(blobItemInteral.blobTags), objectReplicationSourceProperties: parseObjectReplicationRecord(blobItemInteral.objectReplicationMetadata) });
+                                    return blobItem;
+                                }) }) });
+                        return [2 /*return*/, wrappedResponse];
                     case 3:
-                        e_53 = _b.sent();
+                        e_62 = _b.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_53.message
+                            message: e_62.message
                         });
-                        throw e_53;
+                        throw e_62;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -23851,8 +29498,8 @@ var ContainerClient = /** @class */ (function (_super) {
     ContainerClient.prototype.listItems = function (options) {
         if (options === void 0) { options = {}; }
         return tslib.__asyncGenerator(this, arguments, function listItems_1() {
-            var marker, _a, _b, listBlobsFlatSegmentResponse, e_54_1;
-            var e_54, _c;
+            var marker, _a, _b, listBlobsFlatSegmentResponse, e_63_1;
+            var e_63, _c;
             return tslib.__generator(this, function (_d) {
                 switch (_d.label) {
                     case 0:
@@ -23871,8 +29518,8 @@ var ContainerClient = /** @class */ (function (_super) {
                     case 5: return [3 /*break*/, 1];
                     case 6: return [3 /*break*/, 13];
                     case 7:
-                        e_54_1 = _d.sent();
-                        e_54 = { error: e_54_1 };
+                        e_63_1 = _d.sent();
+                        e_63 = { error: e_63_1 };
                         return [3 /*break*/, 13];
                     case 8:
                         _d.trys.push([8, , 11, 12]);
@@ -23883,7 +29530,7 @@ var ContainerClient = /** @class */ (function (_super) {
                         _d.label = 10;
                     case 10: return [3 /*break*/, 12];
                     case 11:
-                        if (e_54) throw e_54.error;
+                        if (e_63) throw e_63.error;
                         return [7 /*endfinally*/];
                     case 12: return [7 /*endfinally*/];
                     case 13: return [2 /*return*/];
@@ -23979,8 +29626,14 @@ var ContainerClient = /** @class */ (function (_super) {
         if (options.includeSnapshots) {
             include.push("snapshots");
         }
+        if (options.includeVersions) {
+            include.push("versions");
+        }
         if (options.includeUncommitedBlobs) {
             include.push("uncommittedblobs");
+        }
+        if (options.includeTags) {
+            include.push("tags");
         }
         if (options.prefix === "") {
             options.prefix = undefined;
@@ -24015,7 +29668,7 @@ var ContainerClient = /** @class */ (function (_super) {
      * Returns an AsyncIterableIterator for ContainerListBlobHierarchySegmentResponse
      *
      * @private
-     * @param {string} delimiter The charactor or string used to define the virtual hierarchy
+     * @param {string} delimiter The character or string used to define the virtual hierarchy
      * @param {string} [marker] A string value that identifies the portion of
      *                          the list of blobs to be returned with the next listing operation. The
      *                          operation returns the ContinuationToken value within the response body if the
@@ -24026,7 +29679,8 @@ var ContainerClient = /** @class */ (function (_super) {
      * @param {ContainerListBlobsSegmentOptions} [options] Options to list blobs operation.
      * @returns {AsyncIterableIterator<ContainerListBlobHierarchySegmentResponse>}
      * @memberof ContainerClient
-     */ ContainerClient.prototype.listHierarchySegments = function (delimiter, marker, options) {
+     */
+    ContainerClient.prototype.listHierarchySegments = function (delimiter, marker, options) {
         if (options === void 0) { options = {}; }
         return tslib.__asyncGenerator(this, arguments, function listHierarchySegments_1() {
             var listBlobsHierarchySegmentResponse;
@@ -24057,7 +29711,7 @@ var ContainerClient = /** @class */ (function (_super) {
      * Returns an AsyncIterableIterator for {@link BlobPrefix} and {@link BlobItem} objects.
      *
      * @private
-     * @param {string} delimiter The charactor or string used to define the virtual hierarchy
+     * @param {string} delimiter The character or string used to define the virtual hierarchy
      * @param {ContainerListBlobsSegmentOptions} [options] Options to list blobs operation.
      * @returns {AsyncIterableIterator<{ kind: "prefix" } & BlobPrefix | { kind: "blob" } & BlobItem>}
      * @memberof ContainerClient
@@ -24065,8 +29719,8 @@ var ContainerClient = /** @class */ (function (_super) {
     ContainerClient.prototype.listItemsByHierarchy = function (delimiter, options) {
         if (options === void 0) { options = {}; }
         return tslib.__asyncGenerator(this, arguments, function listItemsByHierarchy_1() {
-            var marker, _a, _b, listBlobsHierarchySegmentResponse, segment, _i, _c, prefix, _d, _e, blob, e_55_1;
-            var e_55, _f;
+            var marker, _a, _b, listBlobsHierarchySegmentResponse, segment, _i, _c, prefix, _d, _e, blob, e_64_1;
+            var e_64, _f;
             return tslib.__generator(this, function (_g) {
                 switch (_g.label) {
                     case 0:
@@ -24109,8 +29763,8 @@ var ContainerClient = /** @class */ (function (_super) {
                     case 12: return [3 /*break*/, 1];
                     case 13: return [3 /*break*/, 20];
                     case 14:
-                        e_55_1 = _g.sent();
-                        e_55 = { error: e_55_1 };
+                        e_64_1 = _g.sent();
+                        e_64 = { error: e_64_1 };
                         return [3 /*break*/, 20];
                     case 15:
                         _g.trys.push([15, , 18, 19]);
@@ -24121,7 +29775,7 @@ var ContainerClient = /** @class */ (function (_super) {
                         _g.label = 17;
                     case 17: return [3 /*break*/, 19];
                     case 18:
-                        if (e_55) throw e_55.error;
+                        if (e_64) throw e_64.error;
                         return [7 /*endfinally*/];
                     case 19: return [7 /*endfinally*/];
                     case 20: return [2 /*return*/];
@@ -24150,7 +29804,7 @@ var ContainerClient = /** @class */ (function (_super) {
      * Example using `iter.next()`:
      *
      * ```js
-     * let iter = await containerClient.listBlobsByHierarchy("/", { prefix: "prefix1/" });
+     * let iter = containerClient.listBlobsByHierarchy("/", { prefix: "prefix1/" });
      * let entity = await iter.next();
      * while (!entity.done) {
      *   let item = entity.value;
@@ -24202,7 +29856,7 @@ var ContainerClient = /** @class */ (function (_super) {
      * }
      * ```
      *
-     * @param {string} delimiter The charactor or string used to define the virtual hierarchy
+     * @param {string} delimiter The character or string used to define the virtual hierarchy
      * @param {ContainerListBlobsOptions} [options={}] Options to list blobs operation.
      * @returns {(PagedAsyncIterableIterator<
      *   { kind: "prefix" } & BlobPrefix | { kind: "blob" } & BlobItem,
@@ -24214,6 +29868,9 @@ var ContainerClient = /** @class */ (function (_super) {
         var _a;
         var _this = this;
         if (options === void 0) { options = {}; }
+        if (delimiter === "") {
+            throw new RangeError("delimiter should contain one or more characters");
+        }
         var include = [];
         if (options.includeCopy) {
             include.push("copy");
@@ -24227,8 +29884,14 @@ var ContainerClient = /** @class */ (function (_super) {
         if (options.includeSnapshots) {
             include.push("snapshots");
         }
+        if (options.includeVersions) {
+            include.push("versions");
+        }
         if (options.includeUncommitedBlobs) {
             include.push("uncommittedblobs");
+        }
+        if (options.includeTags) {
+            include.push("tags");
         }
         if (options.prefix === "") {
             options.prefix = undefined;
@@ -24274,14 +29937,20 @@ var ContainerClient = /** @class */ (function (_super) {
             var parsedUrl = coreHttp.URLBuilder.parse(this.url);
             if (parsedUrl.getHost().split(".")[1] === "blob") {
                 // "https://myaccount.blob.core.windows.net/containername".
+                // "https://customdomain.com/containername".
                 // .getPath() -> /containername
                 containerName = parsedUrl.getPath().split("/")[1];
             }
-            else {
+            else if (isIpEndpointStyle(parsedUrl)) {
                 // IPv4/IPv6 address hosts... Example - http://192.0.0.10:10001/devstoreaccount1/containername
                 // Single word domain without a [dot] in the endpoint... Example - http://localhost:10001/devstoreaccount1/containername
                 // .getPath() -> /devstoreaccount1/containername
                 containerName = parsedUrl.getPath().split("/")[2];
+            }
+            else {
+                // "https://customdomain.com/containername".
+                // .getPath() -> /containername
+                containerName = parsedUrl.getPath().split("/")[1];
             }
             // decode the encoded containerName - to get all the special characters that might be present in it
             containerName = decodeURIComponent(containerName);
@@ -24751,7 +30420,7 @@ var InnerBatchRequest = /** @class */ (function () {
         this.subRequests = new Map();
     }
     /**
-     * Create pipeline to assemble sub requests. The idea here is to use exising
+     * Create pipeline to assemble sub requests. The idea here is to use existing
      * credential and serialization/deserialization components, with additional policies to
      * filter unnecessary headers, assemble sub requests into request's body
      * and intercept request from going to wire.
@@ -24759,7 +30428,7 @@ var InnerBatchRequest = /** @class */ (function () {
      */
     InnerBatchRequest.prototype.createPipeline = function (credential) {
         var isAnonymousCreds = credential instanceof AnonymousCredential;
-        var policyFactoryLength = 3 + (isAnonymousCreds ? 0 : 1); // [deserilizationPolicy, BatchHeaderFilterPolicyFactory, (Optional)Credential, BatchRequestAssemblePolicyFactory]
+        var policyFactoryLength = 3 + (isAnonymousCreds ? 0 : 1); // [deserializationPolicy, BatchHeaderFilterPolicyFactory, (Optional)Credential, BatchRequestAssemblePolicyFactory]
         var factories = new Array(policyFactoryLength);
         factories[0] = coreHttp.deserializationPolicy(); // Default deserializationPolicy is provided by protocol layer
         factories[1] = new BatchHeaderFilterPolicyFactory(); // Use batch header filter policy to exclude unnecessary headers
@@ -25403,7 +31072,7 @@ var BlobServiceClient = /** @class */ (function (_super) {
                         _b.label = 1;
                     case 1:
                         _b.trys.push([1, 3, 4, 5]);
-                        return [4 /*yield*/, this.serviceContext.listContainersSegment(tslib.__assign(tslib.__assign({ abortSignal: options.abortSignal, marker: marker }, options), { spanOptions: spanOptions }))];
+                        return [4 /*yield*/, this.serviceContext.listContainersSegment(tslib.__assign(tslib.__assign({ abortSignal: options.abortSignal, marker: marker }, options), { include: typeof options.include === "string" ? [options.include] : options.include, spanOptions: spanOptions }))];
                     case 2: return [2 /*return*/, _b.sent()];
                     case 3:
                         e_7 = _b.sent();
@@ -25419,6 +31088,273 @@ var BlobServiceClient = /** @class */ (function (_super) {
                 }
             });
         });
+    };
+    /**
+     * The Filter Blobs operation enables callers to list blobs across all containers whose tags
+     * match a given search expression. Filter blobs searches across all containers within a
+     * storage account but can be scoped within the expression to a single container.
+     *
+     * @private
+     * @param {string} tagFilterSqlExpression The where parameter enables the caller to query blobs whose tags match a given expression.
+     *                                        The given expression must evaluate to true for a blob to be returned in the results.
+     *                                        The[OData - ABNF] filter syntax rule defines the formal grammar for the value of the where query parameter;
+     *                                        however, only a subset of the OData filter syntax is supported in the Blob service.
+     * @param {string} [marker] A string value that identifies the portion of
+     *                          the list of blobs to be returned with the next listing operation. The
+     *                          operation returns the NextMarker value within the response body if the
+     *                          listing operation did not return all blobs remaining to be listed
+     *                          with the current page. The NextMarker value can be used as the value for
+     *                          the marker parameter in a subsequent call to request the next page of list
+     *                          items. The marker value is opaque to the client.
+     * @param {ServiceFindBlobsByTagsSegmentOptions} [options={}] Options to find blobs by tags.
+     * @returns {Promise<ServiceFindBlobsByTagsSegmentResponse>}
+     * @memberof BlobServiceClient
+     */
+    BlobServiceClient.prototype.findBlobsByTagsSegment = function (tagFilterSqlExpression, marker, options) {
+        if (options === void 0) { options = {}; }
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var _a, span, spanOptions, e_8;
+            return tslib.__generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        _a = createSpan("BlobServiceClient-findBlobsByTagsSegment", options.tracingOptions), span = _a.span, spanOptions = _a.spanOptions;
+                        _b.label = 1;
+                    case 1:
+                        _b.trys.push([1, 3, 4, 5]);
+                        return [4 /*yield*/, this.serviceContext.filterBlobs({
+                                abortSignal: options.abortSignal,
+                                where: tagFilterSqlExpression,
+                                marker: marker,
+                                maxPageSize: options.maxPageSize,
+                                spanOptions: spanOptions
+                            })];
+                    case 2: return [2 /*return*/, _b.sent()];
+                    case 3:
+                        e_8 = _b.sent();
+                        span.setStatus({
+                            code: api.CanonicalCode.UNKNOWN,
+                            message: e_8.message
+                        });
+                        throw e_8;
+                    case 4:
+                        span.end();
+                        return [7 /*endfinally*/];
+                    case 5: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    /**
+     * Returns an AsyncIterableIterator for ServiceFindBlobsByTagsSegmentResponse.
+     *
+     * @private
+     * @param {string} tagFilterSqlExpression  The where parameter enables the caller to query blobs whose tags match a given expression.
+     *                                         The given expression must evaluate to true for a blob to be returned in the results.
+     *                                         The[OData - ABNF] filter syntax rule defines the formal grammar for the value of the where query parameter;
+     *                                         however, only a subset of the OData filter syntax is supported in the Blob service.
+     * @param {string} [marker] A string value that identifies the portion of
+     *                          the list of blobs to be returned with the next listing operation. The
+     *                          operation returns the NextMarker value within the response body if the
+     *                          listing operation did not return all blobs remaining to be listed
+     *                          with the current page. The NextMarker value can be used as the value for
+     *                          the marker parameter in a subsequent call to request the next page of list
+     *                          items. The marker value is opaque to the client.
+     * @param {ServiceFindBlobsByTagsSegmentOptions} [options={}] Options to find blobs by tags.
+     * @returns {AsyncIterableIterator<ServiceFindBlobsByTagsSegmentResponse>}
+     * @memberof BlobServiceClient
+     */
+    BlobServiceClient.prototype.findBlobsByTagsSegments = function (tagFilterSqlExpression, marker, options) {
+        if (options === void 0) { options = {}; }
+        return tslib.__asyncGenerator(this, arguments, function findBlobsByTagsSegments_1() {
+            var response;
+            return tslib.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!(!!marker || marker === undefined)) return [3 /*break*/, 6];
+                        _a.label = 1;
+                    case 1: return [4 /*yield*/, tslib.__await(this.findBlobsByTagsSegment(tagFilterSqlExpression, marker, options))];
+                    case 2:
+                        response = _a.sent();
+                        response.blobs = response.blobs || [];
+                        marker = response.continuationToken;
+                        return [4 /*yield*/, tslib.__await(response)];
+                    case 3: return [4 /*yield*/, _a.sent()];
+                    case 4:
+                        _a.sent();
+                        _a.label = 5;
+                    case 5:
+                        if (marker) return [3 /*break*/, 1];
+                        _a.label = 6;
+                    case 6: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    /**
+     * Returns an AsyncIterableIterator for blobs.
+     *
+     * @private
+     * @param {string} tagFilterSqlExpression  The where parameter enables the caller to query blobs whose tags match a given expression.
+     *                                         The given expression must evaluate to true for a blob to be returned in the results.
+     *                                         The[OData - ABNF] filter syntax rule defines the formal grammar for the value of the where query parameter;
+     *                                         however, only a subset of the OData filter syntax is supported in the Blob service.
+     * @param {ServiceFindBlobsByTagsSegmentOptions} [options={}] Options to findBlobsByTagsItems.
+     * @returns {AsyncIterableIterator<FilterBlobItem>}
+     * @memberof BlobServiceClient
+     */
+    BlobServiceClient.prototype.findBlobsByTagsItems = function (tagFilterSqlExpression, options) {
+        if (options === void 0) { options = {}; }
+        return tslib.__asyncGenerator(this, arguments, function findBlobsByTagsItems_1() {
+            var marker, _a, _b, segment, e_9_1;
+            var e_9, _c;
+            return tslib.__generator(this, function (_d) {
+                switch (_d.label) {
+                    case 0:
+                        _d.trys.push([0, 7, 8, 13]);
+                        _a = tslib.__asyncValues(this.findBlobsByTagsSegments(tagFilterSqlExpression, marker, options));
+                        _d.label = 1;
+                    case 1: return [4 /*yield*/, tslib.__await(_a.next())];
+                    case 2:
+                        if (!(_b = _d.sent(), !_b.done)) return [3 /*break*/, 6];
+                        segment = _b.value;
+                        return [5 /*yield**/, tslib.__values(tslib.__asyncDelegator(tslib.__asyncValues(segment.blobs)))];
+                    case 3: return [4 /*yield*/, tslib.__await.apply(void 0, [_d.sent()])];
+                    case 4:
+                        _d.sent();
+                        _d.label = 5;
+                    case 5: return [3 /*break*/, 1];
+                    case 6: return [3 /*break*/, 13];
+                    case 7:
+                        e_9_1 = _d.sent();
+                        e_9 = { error: e_9_1 };
+                        return [3 /*break*/, 13];
+                    case 8:
+                        _d.trys.push([8, , 11, 12]);
+                        if (!(_b && !_b.done && (_c = _a.return))) return [3 /*break*/, 10];
+                        return [4 /*yield*/, tslib.__await(_c.call(_a))];
+                    case 9:
+                        _d.sent();
+                        _d.label = 10;
+                    case 10: return [3 /*break*/, 12];
+                    case 11:
+                        if (e_9) throw e_9.error;
+                        return [7 /*endfinally*/];
+                    case 12: return [7 /*endfinally*/];
+                    case 13: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    /**
+     * Returns an async iterable iterator to find all blobs with specified tag
+     * under the specified account.
+     *
+     * .byPage() returns an async iterable iterator to list the blobs in pages.
+     *
+     * @see https://docs.microsoft.com/en-us/rest/api/storageservices/get-blob-service-properties
+     *
+     * Example using `for await` syntax:
+     *
+     * ```js
+     * let i = 1;
+     * for await (const blob of blobServiceClient.findBlobsByTags("tagkey='tagvalue'")) {
+     *   console.log(`Blob ${i++}: ${container.name}`);
+     * }
+     * ```
+     *
+     * Example using `iter.next()`:
+     *
+     * ```js
+     * let i = 1;
+     * const iter = blobServiceClient.findBlobsByTags("tagkey='tagvalue'");
+     * let blobItem = await iter.next();
+     * while (!blobItem.done) {
+     *   console.log(`Blob ${i++}: ${blobItem.value.name}`);
+     *   blobItem = await iter.next();
+     * }
+     * ```
+     *
+     * Example using `byPage()`:
+     *
+     * ```js
+     * // passing optional maxPageSize in the page settings
+     * let i = 1;
+     * for await (const response of blobServiceClient.findBlobsByTags("tagkey='tagvalue'").byPage({ maxPageSize: 20 })) {
+     *   if (response.blobs) {
+     *     for (const blob of response.blobs) {
+     *       console.log(`Blob ${i++}: ${blob.name}`);
+     *     }
+     *   }
+     * }
+     * ```
+     *
+     * Example using paging with a marker:
+     *
+     * ```js
+     * let i = 1;
+     * let iterator = blobServiceClient.findBlobsByTags("tagkey='tagvalue'").byPage({ maxPageSize: 2 });
+     * let response = (await iterator.next()).value;
+     *
+     * // Prints 2 blob names
+     * if (response.blobs) {
+     *   for (const blob of response.blobs) {
+     *     console.log(`Blob ${i++}: ${blob.name}`);
+     *   }
+     * }
+     *
+     * // Gets next marker
+     * let marker = response.continuationToken;
+     * // Passing next marker as continuationToken
+     * iterator = blobServiceClient
+     *   .findBlobsByTags("tagkey='tagvalue'")
+     *   .byPage({ continuationToken: marker, maxPageSize: 10 });
+     * response = (await iterator.next()).value;
+     *
+     * // Prints blob names
+     * if (response.blobs) {
+     *   for (const blob of response.blobs) {
+     *      console.log(`Blob ${i++}: ${blob.name}`);
+     *   }
+     * }
+     * ```
+     *
+     * @param {string} tagFilterSqlExpression  The where parameter enables the caller to query blobs whose tags match a given expression.
+     *                                         The given expression must evaluate to true for a blob to be returned in the results.
+     *                                         The[OData - ABNF] filter syntax rule defines the formal grammar for the value of the where query parameter;
+     *                                         however, only a subset of the OData filter syntax is supported in the Blob service.
+     * @param {ServiceFindBlobByTagsOptions} [options={}] Options to find blobs by tags.
+     * @returns {PagedAsyncIterableIterator<FilterBlobItem, ServiceFindBlobsByTagsSegmentResponse>}
+     * @memberof BlobServiceClient
+     */
+    BlobServiceClient.prototype.findBlobsByTags = function (tagFilterSqlExpression, options) {
+        var _a;
+        var _this = this;
+        if (options === void 0) { options = {}; }
+        // AsyncIterableIterator to iterate over blobs
+        var listSegmentOptions = tslib.__assign({}, options);
+        var iter = this.findBlobsByTagsItems(tagFilterSqlExpression, listSegmentOptions);
+        return _a = {
+                /**
+                 * @member {Promise} [next] The next method, part of the iteration protocol
+                 */
+                next: function () {
+                    return iter.next();
+                }
+            },
+            /**
+             * @member {Symbol} [asyncIterator] The connection to the async iterator, part of the iteration protocol
+             */
+            _a[Symbol.asyncIterator] = function () {
+                return this;
+            },
+            /**
+             * @member {Function} [byPage] Return an AsyncIterableIterator that works a page at a time
+             */
+            _a.byPage = function (settings) {
+                if (settings === void 0) { settings = {}; }
+                return _this.findBlobsByTagsSegments(tagFilterSqlExpression, settings.continuationToken, tslib.__assign({ maxPageSize: settings.maxPageSize }, listSegmentOptions));
+            },
+            _a;
     };
     /**
      * Returns an AsyncIterableIterator for ServiceListContainersSegmentResponses
@@ -25475,8 +31411,8 @@ var BlobServiceClient = /** @class */ (function (_super) {
     BlobServiceClient.prototype.listItems = function (options) {
         if (options === void 0) { options = {}; }
         return tslib.__asyncGenerator(this, arguments, function listItems_1() {
-            var marker, _a, _b, segment, e_8_1;
-            var e_8, _c;
+            var marker, _a, _b, segment, e_10_1;
+            var e_10, _c;
             return tslib.__generator(this, function (_d) {
                 switch (_d.label) {
                     case 0:
@@ -25495,8 +31431,8 @@ var BlobServiceClient = /** @class */ (function (_super) {
                     case 5: return [3 /*break*/, 1];
                     case 6: return [3 /*break*/, 13];
                     case 7:
-                        e_8_1 = _d.sent();
-                        e_8 = { error: e_8_1 };
+                        e_10_1 = _d.sent();
+                        e_10 = { error: e_10_1 };
                         return [3 /*break*/, 13];
                     case 8:
                         _d.trys.push([8, , 11, 12]);
@@ -25507,7 +31443,7 @@ var BlobServiceClient = /** @class */ (function (_super) {
                         _d.label = 10;
                     case 10: return [3 /*break*/, 12];
                     case 11:
-                        if (e_8) throw e_8.error;
+                        if (e_10) throw e_10.error;
                         return [7 /*endfinally*/];
                     case 12: return [7 /*endfinally*/];
                     case 13: return [2 /*return*/];
@@ -25639,7 +31575,7 @@ var BlobServiceClient = /** @class */ (function (_super) {
     BlobServiceClient.prototype.getUserDelegationKey = function (startsOn, expiresOn, options) {
         if (options === void 0) { options = {}; }
         return tslib.__awaiter(this, void 0, void 0, function () {
-            var _a, span, spanOptions, response, userDelegationKey, res, e_9;
+            var _a, span, spanOptions, response, userDelegationKey, res, e_11;
             return tslib.__generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -25668,12 +31604,12 @@ var BlobServiceClient = /** @class */ (function (_super) {
                         res = tslib.__assign({ _response: response._response, requestId: response.requestId, clientRequestId: response.clientRequestId, version: response.version, date: response.date, errorCode: response.errorCode }, userDelegationKey);
                         return [2 /*return*/, res];
                     case 3:
-                        e_9 = _b.sent();
+                        e_11 = _b.sent();
                         span.setStatus({
                             code: api.CanonicalCode.UNKNOWN,
-                            message: e_9.message
+                            message: e_11.message
                         });
-                        throw e_9;
+                        throw e_11;
                     case 4:
                         span.end();
                         return [7 /*endfinally*/];
@@ -25734,6 +31670,13 @@ var AccountSASPermissions = /** @class */ (function () {
          */
         this.delete = false;
         /**
+         * Permission to delete versions granted.
+         *
+         * @type {boolean}
+         * @memberof AccountSASPermissions
+         */
+        this.deleteVersion = false;
+        /**
          * Permission to list blob containers, blobs, shares, directories, and files granted.
          *
          * @type {boolean}
@@ -25768,6 +31711,20 @@ var AccountSASPermissions = /** @class */ (function () {
          * @memberof AccountSASPermissions
          */
         this.process = false;
+        /**
+         * Specfies Tag access granted.
+         *
+         * @type {boolean}
+         * @memberof AccountSASPermissions
+         */
+        this.tag = false;
+        /**
+         * Permission to filter blobs.
+         *
+         * @type {boolean}
+         * @memberof AccountSASPermissions
+         */
+        this.filter = false;
     }
     /**
      * Parse initializes the AccountSASPermissions fields from a string.
@@ -25791,6 +31748,9 @@ var AccountSASPermissions = /** @class */ (function () {
                 case "d":
                     accountSASPermissions.delete = true;
                     break;
+                case "x":
+                    accountSASPermissions.deleteVersion = true;
+                    break;
                 case "l":
                     accountSASPermissions.list = true;
                     break;
@@ -25805,6 +31765,12 @@ var AccountSASPermissions = /** @class */ (function () {
                     break;
                 case "p":
                     accountSASPermissions.process = true;
+                    break;
+                case "t":
+                    accountSASPermissions.tag = true;
+                    break;
+                case "f":
+                    accountSASPermissions.filter = true;
                     break;
                 default:
                     throw new RangeError("Invalid permission character: " + c);
@@ -25837,6 +31803,15 @@ var AccountSASPermissions = /** @class */ (function () {
         }
         if (this.delete) {
             permissions.push("d");
+        }
+        if (this.deleteVersion) {
+            permissions.push("x");
+        }
+        if (this.filter) {
+            permissions.push("f");
+        }
+        if (this.tag) {
+            permissions.push("t");
         }
         if (this.list) {
             permissions.push("l");
@@ -26131,7 +32106,7 @@ var SASQueryParameters = /** @class */ (function () {
         this.contentType = contentType;
         if (userDelegationKey) {
             this.signedOid = userDelegationKey.signedObjectId;
-            this.signedTenentId = userDelegationKey.signedTenantId;
+            this.signedTenantId = userDelegationKey.signedTenantId;
             this.signedStartsOn = userDelegationKey.signedStartsOn;
             this.signedExpiresOn = userDelegationKey.signedExpiresOn;
             this.signedService = userDelegationKey.signedService;
@@ -26155,7 +32130,7 @@ var SASQueryParameters = /** @class */ (function () {
             }
             return undefined;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     /**
@@ -26221,7 +32196,7 @@ var SASQueryParameters = /** @class */ (function () {
                     this.tryAppendQueryParameter(queries, param, this.signedOid);
                     break;
                 case "sktid": // Signed tenant ID
-                    this.tryAppendQueryParameter(queries, param, this.signedTenentId);
+                    this.tryAppendQueryParameter(queries, param, this.signedTenantId);
                     break;
                 case "skt": // Signed key start time
                     this.tryAppendQueryParameter(queries, param, this.signedStartsOn ? truncatedISO8061Date(this.signedStartsOn, false) : undefined);
@@ -26304,6 +32279,21 @@ function generateAccountSASQueryParameters(accountSASSignatureValues, sharedKeyC
     var version = accountSASSignatureValues.version
         ? accountSASSignatureValues.version
         : SERVICE_VERSION;
+    if (accountSASSignatureValues.permissions &&
+        accountSASSignatureValues.permissions.deleteVersion &&
+        version < "2019-10-10") {
+        throw RangeError("'version' must be >= '2019-10-10' when provided 'x' permission.");
+    }
+    if (accountSASSignatureValues.permissions &&
+        accountSASSignatureValues.permissions.tag &&
+        version < "2019-12-12") {
+        throw RangeError("'version' must be >= '2019-12-12' when provided 't' permission.");
+    }
+    if (accountSASSignatureValues.permissions &&
+        accountSASSignatureValues.permissions.filter &&
+        version < "2019-12-12") {
+        throw RangeError("'version' must be >= '2019-12-12' when provided 'f' permission.");
+    }
     var parsedPermissions = AccountSASPermissions.parse(accountSASSignatureValues.permissions.toString());
     var parsedServices = AccountSASServices.parse(accountSASSignatureValues.services).toString();
     var parsedResourceTypes = AccountSASResourceTypes.parse(accountSASSignatureValues.resourceTypes).toString();
@@ -26376,6 +32366,20 @@ var BlobSASPermissions = /** @class */ (function () {
          * @memberof BlobSASPermissions
          */
         this.delete = false;
+        /**
+         * Specifies Delete version access granted.
+         *
+         * @type {boolean}
+         * @memberof BlobSASPermissions
+         */
+        this.deleteVersion = false;
+        /**
+         * Specfies Tag access granted.
+         *
+         * @type {boolean}
+         * @memberof BlobSASPermissions
+         */
+        this.tag = false;
     }
     /**
      * Creates a {@link BlobSASPermissions} from the specified permissions string. This method will throw an
@@ -26406,6 +32410,12 @@ var BlobSASPermissions = /** @class */ (function () {
                 case "d":
                     blobSASPermissions.delete = true;
                     break;
+                case "x":
+                    blobSASPermissions.deleteVersion = true;
+                    break;
+                case "t":
+                    blobSASPermissions.tag = true;
+                    break;
                 default:
                     throw new RangeError("Invalid permission: " + char);
             }
@@ -26435,6 +32445,12 @@ var BlobSASPermissions = /** @class */ (function () {
         }
         if (this.delete) {
             permissions.push("d");
+        }
+        if (this.deleteVersion) {
+            permissions.push("x");
+        }
+        if (this.tag) {
+            permissions.push("t");
         }
         return permissions.join("");
     };
@@ -26491,12 +32507,26 @@ var ContainerSASPermissions = /** @class */ (function () {
          */
         this.delete = false;
         /**
+         * Specifies Delete version access granted.
+         *
+         * @type {boolean}
+         * @memberof ContainerSASPermissions
+         */
+        this.deleteVersion = false;
+        /**
          * Specifies List access granted.
          *
          * @type {boolean}
          * @memberof ContainerSASPermissions
          */
         this.list = false;
+        /**
+         * Specfies Tag access granted.
+         *
+         * @type {boolean}
+         * @memberof ContainerSASPermissions
+         */
+        this.tag = false;
     }
     /**
      * Creates an {@link ContainerSASPermissions} from the specified permissions string. This method will throw an
@@ -26529,6 +32559,12 @@ var ContainerSASPermissions = /** @class */ (function () {
                     break;
                 case "l":
                     containerSASPermissions.list = true;
+                    break;
+                case "t":
+                    containerSASPermissions.tag = true;
+                    break;
+                case "x":
+                    containerSASPermissions.deleteVersion = true;
                     break;
                 default:
                     throw new RangeError("Invalid permission " + char);
@@ -26563,8 +32599,14 @@ var ContainerSASPermissions = /** @class */ (function () {
         if (this.delete) {
             permissions.push("d");
         }
+        if (this.deleteVersion) {
+            permissions.push("x");
+        }
         if (this.list) {
             permissions.push("l");
+        }
+        if (this.tag) {
+            permissions.push("t");
         }
         return permissions.join("");
     };
@@ -26621,6 +32663,7 @@ function generateBlobSASQueryParameters(blobSASSignatureValues, sharedKeyCredent
     if (sharedKeyCredential === undefined && userDelegationKeyCredential === undefined) {
         throw TypeError("Invalid sharedKeyCredential, userDelegationKey or accountName.");
     }
+    // Version 2019-12-12 adds support for the blob tags permission.
     // Version 2018-11-09 adds support for the signed resource and signed blob snapshot time fields.
     // https://docs.microsoft.com/en-us/rest/api/storageservices/constructing-a-service-sas#constructing-the-signature-string
     if (version >= "2018-11-09") {
@@ -26660,7 +32703,8 @@ function generateBlobSASQueryParameters(blobSASSignatureValues, sharedKeyCredent
  */
 function generateBlobSASQueryParameters20150405(blobSASSignatureValues, sharedKeyCredential) {
     if (!blobSASSignatureValues.identifier &&
-        !blobSASSignatureValues.permissions && !blobSASSignatureValues.expiresOn) {
+        !blobSASSignatureValues.permissions &&
+        !blobSASSignatureValues.expiresOn) {
         throw new RangeError("Must provide 'permissions' and 'expiresOn' for Blob SAS generation when 'identifier' is not provided.");
     }
     var version = blobSASSignatureValues.version ? blobSASSignatureValues.version : SERVICE_VERSION;
@@ -26668,6 +32712,19 @@ function generateBlobSASQueryParameters20150405(blobSASSignatureValues, sharedKe
     var verifiedPermissions;
     if (blobSASSignatureValues.snapshotTime) {
         throw RangeError("'version' must be >= '2018-11-09' when provided 'snapshotTime'.");
+    }
+    if (blobSASSignatureValues.versionId) {
+        throw RangeError("'version' must be >= '2019-10-10' when provided 'versionId'.");
+    }
+    if (blobSASSignatureValues.permissions &&
+        blobSASSignatureValues.permissions.deleteVersion &&
+        version < "2019-10-10") {
+        throw RangeError("'version' must be >= '2019-10-10' when provided 'x' permission.");
+    }
+    if (blobSASSignatureValues.permissions &&
+        blobSASSignatureValues.permissions.tag &&
+        version < "2019-12-12") {
+        throw RangeError("'version' must be >= '2019-12-12' when provided 't' permission.");
     }
     if (blobSASSignatureValues.blobName) {
         resource = "b";
@@ -26723,19 +32780,41 @@ function generateBlobSASQueryParameters20150405(blobSASSignatureValues, sharedKe
  */
 function generateBlobSASQueryParameters20181109(blobSASSignatureValues, sharedKeyCredential) {
     if (!blobSASSignatureValues.identifier &&
-        !blobSASSignatureValues.permissions && !blobSASSignatureValues.expiresOn) {
+        !blobSASSignatureValues.permissions &&
+        !blobSASSignatureValues.expiresOn) {
         throw new RangeError("Must provide 'permissions' and 'expiresOn' for Blob SAS generation when 'identifier' is not provided.");
     }
     var version = blobSASSignatureValues.version ? blobSASSignatureValues.version : SERVICE_VERSION;
     var resource = "c";
     var verifiedPermissions;
+    if (blobSASSignatureValues.versionId && version < "2019-10-10") {
+        throw RangeError("'version' must be >= '2019-10-10' when provided 'versionId'.");
+    }
+    if (blobSASSignatureValues.permissions &&
+        blobSASSignatureValues.permissions.deleteVersion &&
+        version < "2019-10-10") {
+        throw RangeError("'version' must be >= '2019-10-10' when provided 'x' permission.");
+    }
+    if (blobSASSignatureValues.permissions &&
+        blobSASSignatureValues.permissions.tag &&
+        version < "2019-12-12") {
+        throw RangeError("'version' must be >= '2019-12-12' when provided 't' permission.");
+    }
     if (blobSASSignatureValues.blobName === undefined && blobSASSignatureValues.snapshotTime) {
         throw RangeError("Must provide 'blobName' when provided 'snapshotTime'.");
     }
+    if (blobSASSignatureValues.blobName === undefined && blobSASSignatureValues.versionId) {
+        throw RangeError("Must provide 'blobName' when provided 'versionId'.");
+    }
+    var timestamp = blobSASSignatureValues.snapshotTime;
     if (blobSASSignatureValues.blobName) {
         resource = "b";
         if (blobSASSignatureValues.snapshotTime) {
             resource = "bs";
+        }
+        else if (blobSASSignatureValues.versionId) {
+            resource = "bv";
+            timestamp = blobSASSignatureValues.versionId;
         }
     }
     // Calling parse and toString guarantees the proper ordering and throws on invalid characters.
@@ -26762,7 +32841,7 @@ function generateBlobSASQueryParameters20181109(blobSASSignatureValues, sharedKe
         blobSASSignatureValues.protocol ? blobSASSignatureValues.protocol : "",
         version,
         resource,
-        blobSASSignatureValues.snapshotTime,
+        timestamp,
         blobSASSignatureValues.cacheControl ? blobSASSignatureValues.cacheControl : "",
         blobSASSignatureValues.contentDisposition ? blobSASSignatureValues.contentDisposition : "",
         blobSASSignatureValues.contentEncoding ? blobSASSignatureValues.contentEncoding : "",
@@ -26792,15 +32871,36 @@ function generateBlobSASQueryParametersUDK20181109(blobSASSignatureValues, userD
         throw new RangeError("Must provide 'permissions' and 'expiresOn' for Blob SAS generation when generating user delegation SAS.");
     }
     var version = blobSASSignatureValues.version ? blobSASSignatureValues.version : SERVICE_VERSION;
+    if (blobSASSignatureValues.versionId && version < "2019-10-10") {
+        throw RangeError("'version' must be >= '2019-10-10' when provided 'versionId'.");
+    }
+    if (blobSASSignatureValues.permissions &&
+        blobSASSignatureValues.permissions.deleteVersion &&
+        version < "2019-10-10") {
+        throw RangeError("'version' must be >= '2019-10-10' when provided 'x' permission.");
+    }
+    if (blobSASSignatureValues.permissions &&
+        blobSASSignatureValues.permissions.tag &&
+        version < "2019-12-12") {
+        throw RangeError("'version' must be >= '2019-12-12' when provided 't' permission.");
+    }
     var resource = "c";
     var verifiedPermissions;
     if (blobSASSignatureValues.blobName === undefined && blobSASSignatureValues.snapshotTime) {
         throw RangeError("Must provide 'blobName' when provided 'snapshotTime'.");
     }
+    if (blobSASSignatureValues.blobName === undefined && blobSASSignatureValues.versionId) {
+        throw RangeError("Must provide 'blobName' when provided 'versionId'.");
+    }
+    var timestamp = blobSASSignatureValues.snapshotTime;
     if (blobSASSignatureValues.blobName) {
         resource = "b";
         if (blobSASSignatureValues.snapshotTime) {
             resource = "bs";
+        }
+        else if (blobSASSignatureValues.versionId) {
+            resource = "bv";
+            timestamp = blobSASSignatureValues.versionId;
         }
     }
     // Calling parse and toString guarantees the proper ordering and throws on invalid characters.
@@ -26836,7 +32936,7 @@ function generateBlobSASQueryParametersUDK20181109(blobSASSignatureValues, userD
         blobSASSignatureValues.protocol ? blobSASSignatureValues.protocol : "",
         version,
         resource,
-        blobSASSignatureValues.snapshotTime,
+        timestamp,
         blobSASSignatureValues.cacheControl,
         blobSASSignatureValues.contentDisposition,
         blobSASSignatureValues.contentEncoding,
@@ -27113,7 +33213,7 @@ const Store = __webpack_require__(338).Store;
 const MemoryCookieStore = __webpack_require__(332).MemoryCookieStore;
 const pathMatch = __webpack_require__(348).pathMatch;
 const VERSION = __webpack_require__(460);
-const { fromCallback } = __webpack_require__(676);
+const { fromCallback } = __webpack_require__(147);
 
 // From RFC6265 S4.1.1
 // note that it excludes \x3B ";"
@@ -29515,7 +35615,7 @@ var __createBinding;
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
 var iterate    = __webpack_require__(157)
-  , initState  = __webpack_require__(147)
+  , initState  = __webpack_require__(903)
   , terminator = __webpack_require__(939)
   ;
 
@@ -29580,6 +35680,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const os = __importStar(__webpack_require__(87));
+const utils_1 = __webpack_require__(82);
 /**
  * Commands
  *
@@ -29633,28 +35734,14 @@ class Command {
         return cmdStr;
     }
 }
-/**
- * Sanitizes an input into a string so it can be passed into issueCommand safely
- * @param input input to sanitize into a string
- */
-function toCommandValue(input) {
-    if (input === null || input === undefined) {
-        return '';
-    }
-    else if (typeof input === 'string' || input instanceof String) {
-        return input;
-    }
-    return JSON.stringify(input);
-}
-exports.toCommandValue = toCommandValue;
 function escapeData(s) {
-    return toCommandValue(s)
+    return utils_1.toCommandValue(s)
         .replace(/%/g, '%25')
         .replace(/\r/g, '%0D')
         .replace(/\n/g, '%0A');
 }
 function escapeProperty(s) {
-    return toCommandValue(s)
+    return utils_1.toCommandValue(s)
         .replace(/%/g, '%25')
         .replace(/\r/g, '%0D')
         .replace(/\n/g, '%0A')
@@ -29780,6 +35867,7 @@ function createTar(archiveFolder, sourceDirectories, compressionMethod) {
             }
         }
         const args = [
+            '--posix',
             ...getCompressionProgram(),
             '-cf',
             cacheFileName.replace(new RegExp(`\\${path.sep}`, 'g'), '/'),
@@ -29806,8 +35894,8 @@ exports.createTar = createTar;
 
 "use strict";
 
-/*!
- * Copyright 2019, OpenTelemetry Authors
+/*
+ * Copyright The OpenTelemetry Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29821,35 +35909,67 @@ exports.createTar = createTar;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-function __export(m) {
-    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-}
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !exports.hasOwnProperty(p)) __createBinding(exports, m, p);
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(__webpack_require__(2));
-__export(__webpack_require__(744));
-__export(__webpack_require__(753));
-__export(__webpack_require__(40));
-__export(__webpack_require__(43));
-__export(__webpack_require__(625));
-__export(__webpack_require__(450));
-__export(__webpack_require__(767));
-__export(__webpack_require__(151));
-__export(__webpack_require__(162));
-__export(__webpack_require__(670));
-__export(__webpack_require__(932));
-__export(__webpack_require__(975));
+exports.propagation = exports.metrics = exports.trace = exports.context = void 0;
+__exportStar(__webpack_require__(276), exports);
+__exportStar(__webpack_require__(158), exports);
+__exportStar(__webpack_require__(2), exports);
+__exportStar(__webpack_require__(33), exports);
+__exportStar(__webpack_require__(744), exports);
+__exportStar(__webpack_require__(753), exports);
+__exportStar(__webpack_require__(278), exports);
+__exportStar(__webpack_require__(40), exports);
+__exportStar(__webpack_require__(318), exports);
+__exportStar(__webpack_require__(551), exports);
+__exportStar(__webpack_require__(659), exports);
+__exportStar(__webpack_require__(702), exports);
+__exportStar(__webpack_require__(43), exports);
+__exportStar(__webpack_require__(625), exports);
+__exportStar(__webpack_require__(450), exports);
+__exportStar(__webpack_require__(107), exports);
+__exportStar(__webpack_require__(189), exports);
+__exportStar(__webpack_require__(906), exports);
+__exportStar(__webpack_require__(727), exports);
+__exportStar(__webpack_require__(165), exports);
+__exportStar(__webpack_require__(851), exports);
+__exportStar(__webpack_require__(95), exports);
+__exportStar(__webpack_require__(767), exports);
+__exportStar(__webpack_require__(151), exports);
+__exportStar(__webpack_require__(162), exports);
+__exportStar(__webpack_require__(781), exports);
+__exportStar(__webpack_require__(340), exports);
+__exportStar(__webpack_require__(607), exports);
+__exportStar(__webpack_require__(670), exports);
+__exportStar(__webpack_require__(586), exports);
+__exportStar(__webpack_require__(220), exports);
+__exportStar(__webpack_require__(932), exports);
+__exportStar(__webpack_require__(839), exports);
+__exportStar(__webpack_require__(975), exports);
+__exportStar(__webpack_require__(70), exports);
+__exportStar(__webpack_require__(694), exports);
+__exportStar(__webpack_require__(695), exports);
 var context_base_1 = __webpack_require__(459);
-exports.Context = context_base_1.Context;
-const context_1 = __webpack_require__(77);
+Object.defineProperty(exports, "Context", { enumerable: true, get: function () { return context_base_1.Context; } });
+var context_1 = __webpack_require__(77);
 /** Entrypoint for context API */
 exports.context = context_1.ContextAPI.getInstance();
-const trace_1 = __webpack_require__(875);
+var trace_1 = __webpack_require__(875);
 /** Entrypoint for trace API */
 exports.trace = trace_1.TraceAPI.getInstance();
-const metrics_1 = __webpack_require__(136);
+var metrics_1 = __webpack_require__(136);
 /** Entrypoint for metrics API */
 exports.metrics = metrics_1.MetricsAPI.getInstance();
-const propagation_1 = __webpack_require__(22);
+var propagation_1 = __webpack_require__(22);
 /** Entrypoint for propagation API */
 exports.propagation = propagation_1.PropagationAPI.getInstance();
 exports.default = {
@@ -29875,8 +35995,8 @@ exports.default = {
 
 "use strict";
 
-/*!
- * Copyright 2019, OpenTelemetry Authors
+/*
+ * Copyright The OpenTelemetry Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29891,16 +36011,20 @@ exports.default = {
  * limitations under the License.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-const NoopMeter_1 = __webpack_require__(625);
+exports.NOOP_METER_PROVIDER = exports.NoopMeterProvider = void 0;
+var NoopMeter_1 = __webpack_require__(625);
 /**
  * An implementation of the {@link MeterProvider} which returns an impotent Meter
  * for all calls to `getMeter`
  */
-class NoopMeterProvider {
-    getMeter(_name, _version) {
-        return NoopMeter_1.NOOP_METER;
+var NoopMeterProvider = /** @class */ (function () {
+    function NoopMeterProvider() {
     }
-}
+    NoopMeterProvider.prototype.getMeter = function (_name, _version) {
+        return NoopMeter_1.NOOP_METER;
+    };
+    return NoopMeterProvider;
+}());
 exports.NoopMeterProvider = NoopMeterProvider;
 exports.NOOP_METER_PROVIDER = new NoopMeterProvider();
 //# sourceMappingURL=NoopMeterProvider.js.map
@@ -30530,6 +36654,12 @@ function convertBody(buffer, headers) {
 	// html4
 	if (!res && str) {
 		res = /<meta[\s]+?http-equiv=(['"])content-type\1[\s]+?content=(['"])(.+?)\2/i.exec(str);
+		if (!res) {
+			res = /<meta[\s]+?content=(['"])(.+?)\1[\s]+?http-equiv=(['"])content-type\3/i.exec(str);
+			if (res) {
+				res.pop(); // drop last quote
+			}
+		}
 
 		if (res) {
 			res = /charset=(.*)/i.exec(res.pop());
@@ -31537,7 +37667,7 @@ function fetch(url, opts) {
 				// HTTP fetch step 5.5
 				switch (request.redirect) {
 					case 'error':
-						reject(new FetchError(`redirect mode is set to error: ${request.url}`, 'no-redirect'));
+						reject(new FetchError(`uri requested responds with a redirect, redirect mode is set to error: ${request.url}`, 'no-redirect'));
 						finalize();
 						return;
 					case 'manual':
@@ -31576,7 +37706,8 @@ function fetch(url, opts) {
 							method: request.method,
 							body: request.body,
 							signal: request.signal,
-							timeout: request.timeout
+							timeout: request.timeout,
+							size: request.size
 						};
 
 						// HTTP-redirect fetch step 9
@@ -31898,8 +38029,8 @@ exports.FetchError = FetchError;
 
 "use strict";
 
-/*!
- * Copyright 2019, OpenTelemetry Authors
+/*
+ * Copyright The OpenTelemetry Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31913,12 +38044,20 @@ exports.FetchError = FetchError;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-function __export(m) {
-    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-}
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !exports.hasOwnProperty(p)) __createBinding(exports, m, p);
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(__webpack_require__(560));
-__export(__webpack_require__(53));
+__exportStar(__webpack_require__(765), exports);
+__exportStar(__webpack_require__(560), exports);
+__exportStar(__webpack_require__(53), exports);
 //# sourceMappingURL=index.js.map
 
 /***/ }),
@@ -31992,7 +38131,7 @@ module.exports.argument = escapeArgument;
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  XMLNode = __webpack_require__(855);
+  XMLNode = __webpack_require__(257);
 
   NodeType = __webpack_require__(683);
 
@@ -32056,6 +38195,8 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const command_1 = __webpack_require__(431);
+const file_command_1 = __webpack_require__(102);
+const utils_1 = __webpack_require__(82);
 const os = __importStar(__webpack_require__(87));
 const path = __importStar(__webpack_require__(622));
 /**
@@ -32082,9 +38223,17 @@ var ExitCode;
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function exportVariable(name, val) {
-    const convertedVal = command_1.toCommandValue(val);
+    const convertedVal = utils_1.toCommandValue(val);
     process.env[name] = convertedVal;
-    command_1.issueCommand('set-env', { name }, convertedVal);
+    const filePath = process.env['GITHUB_ENV'] || '';
+    if (filePath) {
+        const delimiter = '_GitHubActionsFileCommandDelimeter_';
+        const commandValue = `${name}<<${delimiter}${os.EOL}${convertedVal}${os.EOL}${delimiter}`;
+        file_command_1.issueCommand('ENV', commandValue);
+    }
+    else {
+        command_1.issueCommand('set-env', { name }, convertedVal);
+    }
 }
 exports.exportVariable = exportVariable;
 /**
@@ -32100,7 +38249,13 @@ exports.setSecret = setSecret;
  * @param inputPath
  */
 function addPath(inputPath) {
-    command_1.issueCommand('add-path', {}, inputPath);
+    const filePath = process.env['GITHUB_PATH'] || '';
+    if (filePath) {
+        file_command_1.issueCommand('PATH', inputPath);
+    }
+    else {
+        command_1.issueCommand('add-path', {}, inputPath);
+    }
     process.env['PATH'] = `${inputPath}${path.delimiter}${process.env['PATH']}`;
 }
 exports.addPath = addPath;
@@ -33083,7 +39238,7 @@ module.exports = {"application/1d-interleaved-parityfec":{"source":"iana"},"appl
 "use strict";
 
 const isStream = __webpack_require__(323);
-const getStream = __webpack_require__(145);
+const getStream = __webpack_require__(813);
 const mergeStream = __webpack_require__(778);
 
 // `input` option
@@ -34208,7 +40363,30 @@ CombinedStream.prototype._emitError = function(err) {
 /* 548 */,
 /* 549 */,
 /* 550 */,
-/* 551 */,
+/* 551 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+/*
+ * Copyright The OpenTelemetry Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+//# sourceMappingURL=BoundInstrument.js.map
+
+/***/ }),
 /* 552 */,
 /* 553 */,
 /* 554 */,
@@ -34264,7 +40442,7 @@ CombinedStream.prototype._emitError = function(err) {
 
   XMLDOMConfiguration = __webpack_require__(524);
 
-  XMLNode = __webpack_require__(855);
+  XMLNode = __webpack_require__(257);
 
   NodeType = __webpack_require__(683);
 
@@ -34502,8 +40680,10 @@ CombinedStream.prototype._emitError = function(err) {
 
 "use strict";
 
-/*!
- * Copyright 2020, OpenTelemetry Authors
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Context = void 0;
+/*
+ * Copyright The OpenTelemetry Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34517,33 +40697,27 @@ CombinedStream.prototype._emitError = function(err) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-Object.defineProperty(exports, "__esModule", { value: true });
-/**
- * Class which stores and manages current context values. All methods which
- * update context such as get and delete do not modify an existing context,
- * but create a new one with updated values.
- */
-class Context {
+var Context = /** @class */ (function () {
     /**
      * Construct a new context which inherits values from an optional parent context.
      *
      * @param parentContext a context from which to inherit values
      */
-    constructor(parentContext) {
+    function Context(parentContext) {
         this._currentContext = parentContext ? new Map(parentContext) : new Map();
     }
     /** Get a key to uniquely identify a context value */
-    static createKey(description) {
+    Context.createKey = function (description) {
         return Symbol(description);
-    }
+    };
     /**
      * Get a value from the context.
      *
      * @param key key which identifies a context value
      */
-    getValue(key) {
+    Context.prototype.getValue = function (key) {
         return this._currentContext.get(key);
-    }
+    };
     /**
      * Create a new context which inherits from this context and has
      * the given key set to the given value.
@@ -34551,33 +40725,34 @@ class Context {
      * @param key context key for which to set the value
      * @param value value to set for the given key
      */
-    setValue(key, value) {
-        const context = new Context(this._currentContext);
+    Context.prototype.setValue = function (key, value) {
+        var context = new Context(this._currentContext);
         context._currentContext.set(key, value);
         return context;
-    }
+    };
     /**
      * Return a new context which inherits from this context but does
      * not contain a value for the given key.
      *
      * @param key context key for which to clear a value
      */
-    deleteValue(key) {
-        const context = new Context(this._currentContext);
+    Context.prototype.deleteValue = function (key) {
+        var context = new Context(this._currentContext);
         context._currentContext.delete(key);
         return context;
-    }
-}
+    };
+    /** The root context is used as the default parent context when there is no active context */
+    Context.ROOT_CONTEXT = new Context();
+    /**
+     * This is another identifier to the root context which allows developers to easily search the
+     * codebase for direct uses of context which need to be removed in later PRs.
+     *
+     * It's existence is temporary and it should be removed when all references are fixed.
+     */
+    Context.TODO = Context.ROOT_CONTEXT;
+    return Context;
+}());
 exports.Context = Context;
-/** The root context is used as the default parent context when there is no active context */
-Context.ROOT_CONTEXT = new Context();
-/**
- * This is another identifier to the root context which allows developers to easily search the
- * codebase for direct uses of context which need to be removed in later PRs.
- *
- * It's existence is temporary and it should be removed when all references are fixed.
- */
-Context.TODO = Context.ROOT_CONTEXT;
 //# sourceMappingURL=context.js.map
 
 /***/ }),
@@ -35019,6 +41194,36 @@ Object.defineProperty(exports, "v5", {
     return _v4.default;
   }
 });
+Object.defineProperty(exports, "NIL", {
+  enumerable: true,
+  get: function () {
+    return _nil.default;
+  }
+});
+Object.defineProperty(exports, "version", {
+  enumerable: true,
+  get: function () {
+    return _version.default;
+  }
+});
+Object.defineProperty(exports, "validate", {
+  enumerable: true,
+  get: function () {
+    return _validate.default;
+  }
+});
+Object.defineProperty(exports, "stringify", {
+  enumerable: true,
+  get: function () {
+    return _stringify.default;
+  }
+});
+Object.defineProperty(exports, "parse", {
+  enumerable: true,
+  get: function () {
+    return _parse.default;
+  }
+});
 
 var _v = _interopRequireDefault(__webpack_require__(173));
 
@@ -35028,10 +41233,43 @@ var _v3 = _interopRequireDefault(__webpack_require__(606));
 
 var _v4 = _interopRequireDefault(__webpack_require__(90));
 
+var _nil = _interopRequireDefault(__webpack_require__(24));
+
+var _version = _interopRequireDefault(__webpack_require__(104));
+
+var _validate = _interopRequireDefault(__webpack_require__(676));
+
+var _stringify = _interopRequireDefault(__webpack_require__(855));
+
+var _parse = _interopRequireDefault(__webpack_require__(197));
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 /***/ }),
-/* 586 */,
+/* 586 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+/*
+ * Copyright The OpenTelemetry Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+//# sourceMappingURL=span.js.map
+
+/***/ }),
 /* 587 */,
 /* 588 */
 /***/ (function(module) {
@@ -35450,7 +41688,7 @@ exports.default = void 0;
 
 var _rng = _interopRequireDefault(__webpack_require__(733));
 
-var _bytesToUuid = _interopRequireDefault(__webpack_require__(940));
+var _stringify = _interopRequireDefault(__webpack_require__(855));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -35473,14 +41711,37 @@ function v4(options, buf, offset) {
     return buf;
   }
 
-  return (0, _bytesToUuid.default)(rnds);
+  return (0, _stringify.default)(rnds);
 }
 
 var _default = v4;
 exports.default = _default;
 
 /***/ }),
-/* 607 */,
+/* 607 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+/*
+ * Copyright The OpenTelemetry Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+//# sourceMappingURL=span_context.js.map
+
+/***/ }),
 /* 608 */,
 /* 609 */,
 /* 610 */,
@@ -35659,8 +41920,8 @@ module.exports = require("path");
 
 "use strict";
 
-/*!
- * Copyright 2019, OpenTelemetry Authors
+/*
+ * Copyright The OpenTelemetry Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35674,41 +41935,74 @@ module.exports = require("path");
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.NOOP_BATCH_OBSERVER_METRIC = exports.NOOP_SUM_OBSERVER_METRIC = exports.NOOP_UP_DOWN_SUM_OBSERVER_METRIC = exports.NOOP_VALUE_OBSERVER_METRIC = exports.NOOP_BOUND_BASE_OBSERVER = exports.NOOP_VALUE_RECORDER_METRIC = exports.NOOP_BOUND_VALUE_RECORDER = exports.NOOP_COUNTER_METRIC = exports.NOOP_BOUND_COUNTER = exports.NOOP_METER = exports.NoopBoundBaseObserver = exports.NoopBoundValueRecorder = exports.NoopBoundCounter = exports.NoopBatchObserverMetric = exports.NoopBaseObserverMetric = exports.NoopValueRecorderMetric = exports.NoopCounterMetric = exports.NoopMetric = exports.NoopMeter = void 0;
 /**
  * NoopMeter is a noop implementation of the {@link Meter} interface. It reuses
  * constant NoopMetrics for all of its methods.
  */
-class NoopMeter {
-    constructor() { }
+var NoopMeter = /** @class */ (function () {
+    function NoopMeter() {
+    }
     /**
-     * Returns constant noop measure.
+     * Returns constant noop value recorder.
      * @param name the name of the metric.
      * @param [options] the metric options.
      */
-    createMeasure(name, options) {
-        return exports.NOOP_MEASURE_METRIC;
-    }
+    NoopMeter.prototype.createValueRecorder = function (name, options) {
+        return exports.NOOP_VALUE_RECORDER_METRIC;
+    };
     /**
      * Returns a constant noop counter.
      * @param name the name of the metric.
      * @param [options] the metric options.
      */
-    createCounter(name, options) {
+    NoopMeter.prototype.createCounter = function (name, options) {
         return exports.NOOP_COUNTER_METRIC;
-    }
+    };
     /**
-     * Returns constant noop observer.
+     * Returns a constant noop UpDownCounter.
      * @param name the name of the metric.
      * @param [options] the metric options.
      */
-    createObserver(name, options) {
-        return exports.NOOP_OBSERVER_METRIC;
-    }
-}
+    NoopMeter.prototype.createUpDownCounter = function (name, options) {
+        return exports.NOOP_COUNTER_METRIC;
+    };
+    /**
+     * Returns constant noop value observer.
+     * @param name the name of the metric.
+     * @param [options] the metric options.
+     * @param [callback] the value observer callback
+     */
+    NoopMeter.prototype.createValueObserver = function (name, options, callback) {
+        return exports.NOOP_VALUE_OBSERVER_METRIC;
+    };
+    /**
+     * Returns constant noop batch observer.
+     * @param name the name of the metric.
+     * @param callback the batch observer callback
+     */
+    NoopMeter.prototype.createBatchObserver = function (name, callback) {
+        return exports.NOOP_BATCH_OBSERVER_METRIC;
+    };
+    return NoopMeter;
+}());
 exports.NoopMeter = NoopMeter;
-class NoopMetric {
-    constructor(instrument) {
+var NoopMetric = /** @class */ (function () {
+    function NoopMetric(instrument) {
         this._instrument = instrument;
     }
     /**
@@ -35718,32 +42012,42 @@ class NoopMetric {
      * @param labels key-values pairs that are associated with a specific metric
      *     that you want to record.
      */
-    bind(labels) {
+    NoopMetric.prototype.bind = function (labels) {
         return this._instrument;
-    }
+    };
     /**
      * Removes the Binding from the metric, if it is present.
      * @param labels key-values pairs that are associated with a specific metric.
      */
-    unbind(labels) {
+    NoopMetric.prototype.unbind = function (labels) {
         return;
-    }
+    };
     /**
      * Clears all timeseries from the Metric.
      */
-    clear() {
+    NoopMetric.prototype.clear = function () {
         return;
-    }
-}
+    };
+    return NoopMetric;
+}());
 exports.NoopMetric = NoopMetric;
-class NoopCounterMetric extends NoopMetric {
-    add(value, labels) {
-        this.bind(labels).add(value);
+var NoopCounterMetric = /** @class */ (function (_super) {
+    __extends(NoopCounterMetric, _super);
+    function NoopCounterMetric() {
+        return _super !== null && _super.apply(this, arguments) || this;
     }
-}
+    NoopCounterMetric.prototype.add = function (value, labels) {
+        this.bind(labels).add(value);
+    };
+    return NoopCounterMetric;
+}(NoopMetric));
 exports.NoopCounterMetric = NoopCounterMetric;
-class NoopMeasureMetric extends NoopMetric {
-    record(value, labels, correlationContext, spanContext) {
+var NoopValueRecorderMetric = /** @class */ (function (_super) {
+    __extends(NoopValueRecorderMetric, _super);
+    function NoopValueRecorderMetric() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    NoopValueRecorderMetric.prototype.record = function (value, labels, correlationContext, spanContext) {
         if (typeof correlationContext === 'undefined') {
             this.bind(labels).record(value);
         }
@@ -35753,36 +42057,67 @@ class NoopMeasureMetric extends NoopMetric {
         else {
             this.bind(labels).record(value, correlationContext, spanContext);
         }
+    };
+    return NoopValueRecorderMetric;
+}(NoopMetric));
+exports.NoopValueRecorderMetric = NoopValueRecorderMetric;
+var NoopBaseObserverMetric = /** @class */ (function (_super) {
+    __extends(NoopBaseObserverMetric, _super);
+    function NoopBaseObserverMetric() {
+        return _super !== null && _super.apply(this, arguments) || this;
     }
-}
-exports.NoopMeasureMetric = NoopMeasureMetric;
-class NoopObserverMetric extends NoopMetric {
-    setCallback(callback) { }
-}
-exports.NoopObserverMetric = NoopObserverMetric;
-class NoopBoundCounter {
-    add(value) {
+    NoopBaseObserverMetric.prototype.observation = function () {
+        return {
+            observer: this,
+            value: 0,
+        };
+    };
+    return NoopBaseObserverMetric;
+}(NoopMetric));
+exports.NoopBaseObserverMetric = NoopBaseObserverMetric;
+var NoopBatchObserverMetric = /** @class */ (function (_super) {
+    __extends(NoopBatchObserverMetric, _super);
+    function NoopBatchObserverMetric() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return NoopBatchObserverMetric;
+}(NoopMetric));
+exports.NoopBatchObserverMetric = NoopBatchObserverMetric;
+var NoopBoundCounter = /** @class */ (function () {
+    function NoopBoundCounter() {
+    }
+    NoopBoundCounter.prototype.add = function (value) {
         return;
-    }
-}
+    };
+    return NoopBoundCounter;
+}());
 exports.NoopBoundCounter = NoopBoundCounter;
-class NoopBoundMeasure {
-    record(value, correlationContext, spanContext) {
-        return;
+var NoopBoundValueRecorder = /** @class */ (function () {
+    function NoopBoundValueRecorder() {
     }
-}
-exports.NoopBoundMeasure = NoopBoundMeasure;
-class NoopBoundObserver {
-    setCallback(callback) { }
-}
-exports.NoopBoundObserver = NoopBoundObserver;
+    NoopBoundValueRecorder.prototype.record = function (value, correlationContext, spanContext) {
+        return;
+    };
+    return NoopBoundValueRecorder;
+}());
+exports.NoopBoundValueRecorder = NoopBoundValueRecorder;
+var NoopBoundBaseObserver = /** @class */ (function () {
+    function NoopBoundBaseObserver() {
+    }
+    NoopBoundBaseObserver.prototype.update = function (value) { };
+    return NoopBoundBaseObserver;
+}());
+exports.NoopBoundBaseObserver = NoopBoundBaseObserver;
 exports.NOOP_METER = new NoopMeter();
 exports.NOOP_BOUND_COUNTER = new NoopBoundCounter();
 exports.NOOP_COUNTER_METRIC = new NoopCounterMetric(exports.NOOP_BOUND_COUNTER);
-exports.NOOP_BOUND_MEASURE = new NoopBoundMeasure();
-exports.NOOP_MEASURE_METRIC = new NoopMeasureMetric(exports.NOOP_BOUND_MEASURE);
-exports.NOOP_BOUND_OBSERVER = new NoopBoundObserver();
-exports.NOOP_OBSERVER_METRIC = new NoopObserverMetric(exports.NOOP_BOUND_OBSERVER);
+exports.NOOP_BOUND_VALUE_RECORDER = new NoopBoundValueRecorder();
+exports.NOOP_VALUE_RECORDER_METRIC = new NoopValueRecorderMetric(exports.NOOP_BOUND_VALUE_RECORDER);
+exports.NOOP_BOUND_BASE_OBSERVER = new NoopBoundBaseObserver();
+exports.NOOP_VALUE_OBSERVER_METRIC = new NoopBaseObserverMetric(exports.NOOP_BOUND_BASE_OBSERVER);
+exports.NOOP_UP_DOWN_SUM_OBSERVER_METRIC = new NoopBaseObserverMetric(exports.NOOP_BOUND_BASE_OBSERVER);
+exports.NOOP_SUM_OBSERVER_METRIC = new NoopBaseObserverMetric(exports.NOOP_BOUND_BASE_OBSERVER);
+exports.NOOP_BATCH_OBSERVER_METRIC = new NoopBatchObserverMetric();
 //# sourceMappingURL=NoopMeter.js.map
 
 /***/ }),
@@ -35813,7 +42148,7 @@ module.exports = require("net");
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  XMLNode = __webpack_require__(855);
+  XMLNode = __webpack_require__(257);
 
   module.exports = XMLCharacterData = (function(superClass) {
     extend(XMLCharacterData, superClass);
@@ -37617,7 +43952,30 @@ if (process.platform === 'linux') {
 
 /***/ }),
 /* 658 */,
-/* 659 */,
+/* 659 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+/*
+ * Copyright The OpenTelemetry Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+//# sourceMappingURL=Meter.js.map
+
+/***/ }),
 /* 660 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -37629,7 +43987,7 @@ if (process.platform === 'linux') {
 
   NodeType = __webpack_require__(683);
 
-  XMLNode = __webpack_require__(855);
+  XMLNode = __webpack_require__(257);
 
   module.exports = XMLRaw = (function(superClass) {
     extend(XMLRaw, superClass);
@@ -37670,7 +44028,7 @@ if (process.platform === 'linux') {
 
   isObject = __webpack_require__(582).isObject;
 
-  XMLNode = __webpack_require__(855);
+  XMLNode = __webpack_require__(257);
 
   NodeType = __webpack_require__(683);
 
@@ -37780,8 +44138,10 @@ module.exports = require("util");
 
 "use strict";
 
-/*!
- * Copyright 2019, OpenTelemetry Authors
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SpanKind = void 0;
+/*
+ * Copyright The OpenTelemetry Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37794,11 +44154,6 @@ module.exports = require("util");
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
-Object.defineProperty(exports, "__esModule", { value: true });
-/**
- * Type of span. Can be used to specify additional relationships between spans
- * in addition to a parent/child relationship.
  */
 var SpanKind;
 (function (SpanKind) {
@@ -38036,35 +44391,26 @@ function isUnixExecutable(stats) {
 /* 674 */,
 /* 675 */,
 /* 676 */
-/***/ (function(__unusedmodule, exports) {
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
 
 
-exports.fromCallback = function (fn) {
-  return Object.defineProperty(function () {
-    if (typeof arguments[arguments.length - 1] === 'function') fn.apply(this, arguments)
-    else {
-      return new Promise((resolve, reject) => {
-        arguments[arguments.length] = (err, res) => {
-          if (err) return reject(err)
-          resolve(res)
-        }
-        arguments.length++
-        fn.apply(this, arguments)
-      })
-    }
-  }, 'name', { value: fn.name })
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _regex = _interopRequireDefault(__webpack_require__(238));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function validate(uuid) {
+  return typeof uuid === 'string' && _regex.default.test(uuid);
 }
 
-exports.fromPromise = function (fn) {
-  return Object.defineProperty(function () {
-    const cb = arguments[arguments.length - 1]
-    if (typeof cb !== 'function') return fn.apply(this, arguments)
-    else fn.apply(this, arguments).then(r => cb(null, r), cb)
-  }, 'name', { value: fn.name })
-}
-
+var _default = validate;
+exports.default = _default;
 
 /***/ }),
 /* 677 */,
@@ -38305,15 +44651,84 @@ exports.saveCache = saveCache;
 
 /***/ }),
 /* 693 */,
-/* 694 */,
-/* 695 */,
+/* 694 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+/*
+ * Copyright The OpenTelemetry Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+//# sourceMappingURL=tracer_provider.js.map
+
+/***/ }),
+/* 695 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+/*
+ * Copyright The OpenTelemetry Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+//# sourceMappingURL=tracer.js.map
+
+/***/ }),
 /* 696 */,
 /* 697 */,
 /* 698 */,
 /* 699 */,
 /* 700 */,
 /* 701 */,
-/* 702 */,
+/* 702 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+/*
+ * Copyright The OpenTelemetry Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+//# sourceMappingURL=MeterProvider.js.map
+
+/***/ }),
 /* 703 */,
 /* 704 */,
 /* 705 */,
@@ -38448,50 +44863,44 @@ const mimicFn = __webpack_require__(686);
 
 const calledFunctions = new WeakMap();
 
-const oneTime = (fn, options = {}) => {
-	if (typeof fn !== 'function') {
+const onetime = (function_, options = {}) => {
+	if (typeof function_ !== 'function') {
 		throw new TypeError('Expected a function');
 	}
 
-	let ret;
-	let isCalled = false;
+	let returnValue;
 	let callCount = 0;
-	const functionName = fn.displayName || fn.name || '<anonymous>';
+	const functionName = function_.displayName || function_.name || '<anonymous>';
 
-	const onetime = function (...args) {
+	const onetime = function (...arguments_) {
 		calledFunctions.set(onetime, ++callCount);
 
-		if (isCalled) {
-			if (options.throw === true) {
-				throw new Error(`Function \`${functionName}\` can only be called once`);
-			}
-
-			return ret;
+		if (callCount === 1) {
+			returnValue = function_.apply(this, arguments_);
+			function_ = null;
+		} else if (options.throw === true) {
+			throw new Error(`Function \`${functionName}\` can only be called once`);
 		}
 
-		isCalled = true;
-		ret = fn.apply(this, args);
-		fn = null;
-
-		return ret;
+		return returnValue;
 	};
 
-	mimicFn(onetime, fn);
+	mimicFn(onetime, function_);
 	calledFunctions.set(onetime, callCount);
 
 	return onetime;
 };
 
-module.exports = oneTime;
+module.exports = onetime;
 // TODO: Remove this for the next major release
-module.exports.default = oneTime;
+module.exports.default = onetime;
 
-module.exports.callCount = fn => {
-	if (!calledFunctions.has(fn)) {
-		throw new Error(`The given function \`${fn.name}\` is not wrapped by the \`onetime\` package`);
+module.exports.callCount = function_ => {
+	if (!calledFunctions.has(function_)) {
+		throw new Error(`The given function \`${function_.name}\` is not wrapped by the \`onetime\` package`);
 	}
 
-	return calledFunctions.get(fn);
+	return calledFunctions.get(function_);
 };
 
 
@@ -38520,7 +44929,30 @@ module.exports.callCount = fn => {
 /***/ }),
 /* 725 */,
 /* 726 */,
-/* 727 */,
+/* 727 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+/*
+ * Copyright The OpenTelemetry Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+//# sourceMappingURL=Event.js.map
+
+/***/ }),
 /* 728 */
 /***/ (function(__unusedmodule, exports) {
 
@@ -38575,7 +45007,7 @@ function rng() {
 
   isObject = __webpack_require__(582).isObject;
 
-  XMLNode = __webpack_require__(855);
+  XMLNode = __webpack_require__(257);
 
   NodeType = __webpack_require__(683);
 
@@ -38769,7 +45201,7 @@ function rng() {
 
   isObject = __webpack_require__(582).isObject;
 
-  XMLNode = __webpack_require__(855);
+  XMLNode = __webpack_require__(257);
 
   NodeType = __webpack_require__(683);
 
@@ -38818,7 +45250,7 @@ var core
 if (process.platform === 'win32' || global.TESTING_WINDOWS) {
   core = __webpack_require__(818)
 } else {
-  core = __webpack_require__(197)
+  core = __webpack_require__(842)
 }
 
 module.exports = isexe
@@ -38879,8 +45311,8 @@ function sync (path, options) {
 
 "use strict";
 
-/*!
- * Copyright 2019, OpenTelemetry Authors
+/*
+ * Copyright The OpenTelemetry Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38895,17 +45327,21 @@ function sync (path, options) {
  * limitations under the License.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.NOOP_HTTP_TEXT_PROPAGATOR = exports.NoopHttpTextPropagator = void 0;
 /**
  * No-op implementations of {@link HttpTextPropagator}.
  */
-class NoopHttpTextPropagator {
-    /** Noop inject function does nothing */
-    inject(context, carrier, setter) { }
-    /** Noop extract function does nothing and returns the input context */
-    extract(context, carrier, getter) {
-        return context;
+var NoopHttpTextPropagator = /** @class */ (function () {
+    function NoopHttpTextPropagator() {
     }
-}
+    /** Noop inject function does nothing */
+    NoopHttpTextPropagator.prototype.inject = function (context, carrier, setter) { };
+    /** Noop extract function does nothing and returns the input context */
+    NoopHttpTextPropagator.prototype.extract = function (context, carrier, getter) {
+        return context;
+    };
+    return NoopHttpTextPropagator;
+}());
 exports.NoopHttpTextPropagator = NoopHttpTextPropagator;
 exports.NOOP_HTTP_TEXT_PROPAGATOR = new NoopHttpTextPropagator();
 //# sourceMappingURL=NoopHttpTextPropagator.js.map
@@ -39287,8 +45723,8 @@ function async(callback)
 
 "use strict";
 
-/*!
- * Copyright 2020, OpenTelemetry Authors
+/*
+ * Copyright The OpenTelemetry Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39303,6 +45739,7 @@ function async(callback)
  * limitations under the License.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.defaultSetter = void 0;
 /**
  * Default setter which sets value via direct property access
  *
@@ -39331,16 +45768,48 @@ module.exports = require("zlib");
 /***/ }),
 /* 762 */,
 /* 763 */,
-/* 764 */,
-/* 765 */,
-/* 766 */,
-/* 767 */
+/* 764 */
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
 
-/*!
- * Copyright 2019, OpenTelemetry Authors
+/*
+ * Copyright The OpenTelemetry Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !exports.hasOwnProperty(p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(__webpack_require__(145), exports);
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+/* 765 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+/*
+ * Copyright The OpenTelemetry Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39355,10 +45824,36 @@ module.exports = require("zlib");
  * limitations under the License.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-const trace_flags_1 = __webpack_require__(975);
+//# sourceMappingURL=types.js.map
+
+/***/ }),
+/* 766 */,
+/* 767 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+/*
+ * Copyright The OpenTelemetry Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.NOOP_SPAN = exports.NoopSpan = exports.INVALID_SPAN_ID = exports.INVALID_TRACE_ID = void 0;
+var trace_flags_1 = __webpack_require__(975);
 exports.INVALID_TRACE_ID = '0';
 exports.INVALID_SPAN_ID = '0';
-const INVALID_SPAN_CONTEXT = {
+var INVALID_SPAN_CONTEXT = {
     traceId: exports.INVALID_TRACE_ID,
     spanId: exports.INVALID_SPAN_ID,
     traceFlags: trace_flags_1.TraceFlags.NONE,
@@ -39368,41 +45863,43 @@ const INVALID_SPAN_CONTEXT = {
  * implementation is available. All operations are no-op including context
  * propagation.
  */
-class NoopSpan {
-    constructor(_spanContext = INVALID_SPAN_CONTEXT) {
+var NoopSpan = /** @class */ (function () {
+    function NoopSpan(_spanContext) {
+        if (_spanContext === void 0) { _spanContext = INVALID_SPAN_CONTEXT; }
         this._spanContext = _spanContext;
     }
     // Returns a SpanContext.
-    context() {
+    NoopSpan.prototype.context = function () {
         return this._spanContext;
-    }
+    };
     // By default does nothing
-    setAttribute(key, value) {
+    NoopSpan.prototype.setAttribute = function (key, value) {
         return this;
-    }
+    };
     // By default does nothing
-    setAttributes(attributes) {
+    NoopSpan.prototype.setAttributes = function (attributes) {
         return this;
-    }
+    };
     // By default does nothing
-    addEvent(name, attributes) {
+    NoopSpan.prototype.addEvent = function (name, attributes) {
         return this;
-    }
+    };
     // By default does nothing
-    setStatus(status) {
+    NoopSpan.prototype.setStatus = function (status) {
         return this;
-    }
+    };
     // By default does nothing
-    updateName(name) {
+    NoopSpan.prototype.updateName = function (name) {
         return this;
-    }
+    };
     // By default does nothing
-    end(endTime) { }
+    NoopSpan.prototype.end = function (endTime) { };
     // isRecording always returns false for noopSpan.
-    isRecording() {
+    NoopSpan.prototype.isRecording = function () {
         return false;
-    }
-}
+    };
+    return NoopSpan;
+}());
 exports.NoopSpan = NoopSpan;
 exports.NOOP_SPAN = new NoopSpan();
 //# sourceMappingURL=NoopSpan.js.map
@@ -40196,56 +46693,27 @@ function populateMaps (extensions, types) {
 /***/ }),
 /* 780 */,
 /* 781 */
-/***/ (function(module) {
+/***/ (function(__unusedmodule, exports) {
 
 "use strict";
 
-
-const nativePromisePrototype = (async () => {})().constructor.prototype;
-const descriptors = ['then', 'catch', 'finally'].map(property => [
-	property,
-	Reflect.getOwnPropertyDescriptor(nativePromisePrototype, property)
-]);
-
-// The return value is a mixin of `childProcess` and `Promise`
-const mergePromise = (spawned, promise) => {
-	for (const [property, descriptor] of descriptors) {
-		// Starting the main `promise` is deferred to avoid consuming streams
-		const value = typeof promise === 'function' ?
-			(...args) => Reflect.apply(descriptor.value, promise(), args) :
-			descriptor.value.bind(promise);
-
-		Reflect.defineProperty(spawned, property, {...descriptor, value});
-	}
-
-	return spawned;
-};
-
-// Use promises instead of `child_process` events
-const getSpawnedPromise = spawned => {
-	return new Promise((resolve, reject) => {
-		spawned.on('exit', (exitCode, signal) => {
-			resolve({exitCode, signal});
-		});
-
-		spawned.on('error', error => {
-			reject(error);
-		});
-
-		if (spawned.stdin) {
-			spawned.stdin.on('error', error => {
-				reject(error);
-			});
-		}
-	});
-};
-
-module.exports = {
-	mergePromise,
-	getSpawnedPromise
-};
-
-
+/*
+ * Copyright The OpenTelemetry Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+//# sourceMappingURL=Sampler.js.map
 
 /***/ }),
 /* 782 */,
@@ -40355,7 +46823,7 @@ module.exports = require("stream");
 
   ref = __webpack_require__(582), isObject = ref.isObject, isFunction = ref.isFunction, getValue = ref.getValue;
 
-  XMLNode = __webpack_require__(855);
+  XMLNode = __webpack_require__(257);
 
   NodeType = __webpack_require__(683);
 
@@ -40661,7 +47129,7 @@ module.exports = require("stream");
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  XMLNode = __webpack_require__(855);
+  XMLNode = __webpack_require__(257);
 
   NodeType = __webpack_require__(683);
 
@@ -40724,7 +47192,73 @@ module.exports = require("stream");
 /* 810 */,
 /* 811 */,
 /* 812 */,
-/* 813 */,
+/* 813 */
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+"use strict";
+
+const {constants: BufferConstants} = __webpack_require__(293);
+const pump = __webpack_require__(453);
+const bufferStream = __webpack_require__(966);
+
+class MaxBufferError extends Error {
+	constructor() {
+		super('maxBuffer exceeded');
+		this.name = 'MaxBufferError';
+	}
+}
+
+async function getStream(inputStream, options) {
+	if (!inputStream) {
+		return Promise.reject(new Error('Expected a stream'));
+	}
+
+	options = {
+		maxBuffer: Infinity,
+		...options
+	};
+
+	const {maxBuffer} = options;
+
+	let stream;
+	await new Promise((resolve, reject) => {
+		const rejectPromise = error => {
+			// Don't retrieve an oversized buffer.
+			if (error && stream.getBufferedLength() <= BufferConstants.MAX_LENGTH) {
+				error.bufferedData = stream.getBufferedValue();
+			}
+
+			reject(error);
+		};
+
+		stream = pump(inputStream, bufferStream(options), error => {
+			if (error) {
+				rejectPromise(error);
+				return;
+			}
+
+			resolve();
+		});
+
+		stream.on('data', () => {
+			if (stream.getBufferedLength() > maxBuffer) {
+				rejectPromise(new MaxBufferError());
+			}
+		});
+	});
+
+	return stream.getBufferedValue();
+}
+
+module.exports = getStream;
+// TODO: Remove this for the next major release
+module.exports.default = getStream;
+module.exports.buffer = (stream, options) => getStream(stream, {...options, encoding: 'buffer'});
+module.exports.array = (stream, options) => getStream(stream, {...options, array: true});
+module.exports.MaxBufferError = MaxBufferError;
+
+
+/***/ }),
 /* 814 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -40856,7 +47390,304 @@ which.sync = whichSync
 
 
 /***/ }),
-/* 815 */,
+/* 815 */
+/***/ (function(module) {
+
+/*! *****************************************************************************
+Copyright (c) Microsoft Corporation.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+***************************************************************************** */
+/* global global, define, System, Reflect, Promise */
+var __extends;
+var __assign;
+var __rest;
+var __decorate;
+var __param;
+var __metadata;
+var __awaiter;
+var __generator;
+var __exportStar;
+var __values;
+var __read;
+var __spread;
+var __spreadArrays;
+var __await;
+var __asyncGenerator;
+var __asyncDelegator;
+var __asyncValues;
+var __makeTemplateObject;
+var __importStar;
+var __importDefault;
+var __classPrivateFieldGet;
+var __classPrivateFieldSet;
+var __createBinding;
+(function (factory) {
+    var root = typeof global === "object" ? global : typeof self === "object" ? self : typeof this === "object" ? this : {};
+    if (typeof define === "function" && define.amd) {
+        define("tslib", ["exports"], function (exports) { factory(createExporter(root, createExporter(exports))); });
+    }
+    else if ( true && typeof module.exports === "object") {
+        factory(createExporter(root, createExporter(module.exports)));
+    }
+    else {
+        factory(createExporter(root));
+    }
+    function createExporter(exports, previous) {
+        if (exports !== root) {
+            if (typeof Object.create === "function") {
+                Object.defineProperty(exports, "__esModule", { value: true });
+            }
+            else {
+                exports.__esModule = true;
+            }
+        }
+        return function (id, v) { return exports[id] = previous ? previous(id, v) : v; };
+    }
+})
+(function (exporter) {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+
+    __extends = function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+
+    __assign = Object.assign || function (t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+        }
+        return t;
+    };
+
+    __rest = function (s, e) {
+        var t = {};
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+            t[p] = s[p];
+        if (s != null && typeof Object.getOwnPropertySymbols === "function")
+            for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+                if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                    t[p[i]] = s[p[i]];
+            }
+        return t;
+    };
+
+    __decorate = function (decorators, target, key, desc) {
+        var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+        if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+        else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+        return c > 3 && r && Object.defineProperty(target, key, r), r;
+    };
+
+    __param = function (paramIndex, decorator) {
+        return function (target, key) { decorator(target, key, paramIndex); }
+    };
+
+    __metadata = function (metadataKey, metadataValue) {
+        if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(metadataKey, metadataValue);
+    };
+
+    __awaiter = function (thisArg, _arguments, P, generator) {
+        function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+        return new (P || (P = Promise))(function (resolve, reject) {
+            function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+            function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+            function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+            step((generator = generator.apply(thisArg, _arguments || [])).next());
+        });
+    };
+
+    __generator = function (thisArg, body) {
+        var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+        return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+        function verb(n) { return function (v) { return step([n, v]); }; }
+        function step(op) {
+            if (f) throw new TypeError("Generator is already executing.");
+            while (_) try {
+                if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+                if (y = 0, t) op = [op[0] & 2, t.value];
+                switch (op[0]) {
+                    case 0: case 1: t = op; break;
+                    case 4: _.label++; return { value: op[1], done: false };
+                    case 5: _.label++; y = op[1]; op = [0]; continue;
+                    case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                    default:
+                        if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                        if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                        if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                        if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                        if (t[2]) _.ops.pop();
+                        _.trys.pop(); continue;
+                }
+                op = body.call(thisArg, _);
+            } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+            if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+        }
+    };
+
+    __exportStar = function(m, o) {
+        for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(o, p)) __createBinding(o, m, p);
+    };
+
+    __createBinding = Object.create ? (function(o, m, k, k2) {
+        if (k2 === undefined) k2 = k;
+        Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    }) : (function(o, m, k, k2) {
+        if (k2 === undefined) k2 = k;
+        o[k2] = m[k];
+    });
+
+    __values = function (o) {
+        var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
+        if (m) return m.call(o);
+        if (o && typeof o.length === "number") return {
+            next: function () {
+                if (o && i >= o.length) o = void 0;
+                return { value: o && o[i++], done: !o };
+            }
+        };
+        throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
+    };
+
+    __read = function (o, n) {
+        var m = typeof Symbol === "function" && o[Symbol.iterator];
+        if (!m) return o;
+        var i = m.call(o), r, ar = [], e;
+        try {
+            while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+        }
+        catch (error) { e = { error: error }; }
+        finally {
+            try {
+                if (r && !r.done && (m = i["return"])) m.call(i);
+            }
+            finally { if (e) throw e.error; }
+        }
+        return ar;
+    };
+
+    __spread = function () {
+        for (var ar = [], i = 0; i < arguments.length; i++)
+            ar = ar.concat(__read(arguments[i]));
+        return ar;
+    };
+
+    __spreadArrays = function () {
+        for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+        for (var r = Array(s), k = 0, i = 0; i < il; i++)
+            for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+                r[k] = a[j];
+        return r;
+    };
+
+    __await = function (v) {
+        return this instanceof __await ? (this.v = v, this) : new __await(v);
+    };
+
+    __asyncGenerator = function (thisArg, _arguments, generator) {
+        if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+        var g = generator.apply(thisArg, _arguments || []), i, q = [];
+        return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i;
+        function verb(n) { if (g[n]) i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; }
+        function resume(n, v) { try { step(g[n](v)); } catch (e) { settle(q[0][3], e); } }
+        function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r);  }
+        function fulfill(value) { resume("next", value); }
+        function reject(value) { resume("throw", value); }
+        function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }
+    };
+
+    __asyncDelegator = function (o) {
+        var i, p;
+        return i = {}, verb("next"), verb("throw", function (e) { throw e; }), verb("return"), i[Symbol.iterator] = function () { return this; }, i;
+        function verb(n, f) { i[n] = o[n] ? function (v) { return (p = !p) ? { value: __await(o[n](v)), done: n === "return" } : f ? f(v) : v; } : f; }
+    };
+
+    __asyncValues = function (o) {
+        if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+        var m = o[Symbol.asyncIterator], i;
+        return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+        function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+        function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+    };
+
+    __makeTemplateObject = function (cooked, raw) {
+        if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
+        return cooked;
+    };
+
+    var __setModuleDefault = Object.create ? (function(o, v) {
+        Object.defineProperty(o, "default", { enumerable: true, value: v });
+    }) : function(o, v) {
+        o["default"] = v;
+    };
+
+    __importStar = function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+
+    __importDefault = function (mod) {
+        return (mod && mod.__esModule) ? mod : { "default": mod };
+    };
+
+    __classPrivateFieldGet = function (receiver, privateMap) {
+        if (!privateMap.has(receiver)) {
+            throw new TypeError("attempted to get private field on non-instance");
+        }
+        return privateMap.get(receiver);
+    };
+
+    __classPrivateFieldSet = function (receiver, privateMap, value) {
+        if (!privateMap.has(receiver)) {
+            throw new TypeError("attempted to set private field on non-instance");
+        }
+        privateMap.set(receiver, value);
+        return value;
+    };
+
+    exporter("__extends", __extends);
+    exporter("__assign", __assign);
+    exporter("__rest", __rest);
+    exporter("__decorate", __decorate);
+    exporter("__param", __param);
+    exporter("__metadata", __metadata);
+    exporter("__awaiter", __awaiter);
+    exporter("__generator", __generator);
+    exporter("__exportStar", __exportStar);
+    exporter("__createBinding", __createBinding);
+    exporter("__values", __values);
+    exporter("__read", __read);
+    exporter("__spread", __spread);
+    exporter("__spreadArrays", __spreadArrays);
+    exporter("__await", __await);
+    exporter("__asyncGenerator", __asyncGenerator);
+    exporter("__asyncDelegator", __asyncDelegator);
+    exporter("__asyncValues", __asyncValues);
+    exporter("__makeTemplateObject", __makeTemplateObject);
+    exporter("__importStar", __importStar);
+    exporter("__importDefault", __importDefault);
+    exporter("__classPrivateFieldGet", __classPrivateFieldGet);
+    exporter("__classPrivateFieldSet", __classPrivateFieldSet);
+});
+
+
+/***/ }),
 /* 816 */
 /***/ (function(module) {
 
@@ -40974,10 +47805,79 @@ module.exports = require("url");
 /* 836 */,
 /* 837 */,
 /* 838 */,
-/* 839 */,
+/* 839 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+/*
+ * Copyright The OpenTelemetry Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+//# sourceMappingURL=TimedEvent.js.map
+
+/***/ }),
 /* 840 */,
 /* 841 */,
-/* 842 */,
+/* 842 */
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+module.exports = isexe
+isexe.sync = sync
+
+var fs = __webpack_require__(747)
+
+function isexe (path, options, cb) {
+  fs.stat(path, function (er, stat) {
+    cb(er, er ? false : checkStat(stat, options))
+  })
+}
+
+function sync (path, options) {
+  return checkStat(fs.statSync(path), options)
+}
+
+function checkStat (stat, options) {
+  return stat.isFile() && checkMode(stat, options)
+}
+
+function checkMode (stat, options) {
+  var mod = stat.mode
+  var uid = stat.uid
+  var gid = stat.gid
+
+  var myUid = options.uid !== undefined ?
+    options.uid : process.getuid && process.getuid()
+  var myGid = options.gid !== undefined ?
+    options.gid : process.getgid && process.getgid()
+
+  var u = parseInt('100', 8)
+  var g = parseInt('010', 8)
+  var o = parseInt('001', 8)
+  var ug = u | g
+
+  var ret = (mod & o) ||
+    (mod & g) && gid === myGid ||
+    (mod & u) && uid === myUid ||
+    (mod & ug) && myUid === 0
+
+  return ret
+}
+
+
+/***/ }),
 /* 843 */,
 /* 844 */,
 /* 845 */,
@@ -40986,7 +47886,30 @@ module.exports = require("url");
 /* 848 */,
 /* 849 */,
 /* 850 */,
-/* 851 */,
+/* 851 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+/*
+ * Copyright The OpenTelemetry Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+//# sourceMappingURL=link_context.js.map
+
+/***/ }),
 /* 852 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -41007,794 +47930,48 @@ module.exports = __webpack_require__(512)
 /* 853 */,
 /* 854 */,
 /* 855 */
-/***/ (function(module, __unusedexports, __webpack_require__) {
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
 
-// Generated by CoffeeScript 1.12.7
-(function() {
-  var DocumentPosition, NodeType, XMLCData, XMLComment, XMLDeclaration, XMLDocType, XMLDummy, XMLElement, XMLNamedNodeMap, XMLNode, XMLNodeList, XMLProcessingInstruction, XMLRaw, XMLText, getValue, isEmpty, isFunction, isObject, ref1,
-    hasProp = {}.hasOwnProperty;
+"use strict";
 
-  ref1 = __webpack_require__(582), isObject = ref1.isObject, isFunction = ref1.isFunction, isEmpty = ref1.isEmpty, getValue = ref1.getValue;
 
-  XMLElement = null;
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
 
-  XMLCData = null;
+var _validate = _interopRequireDefault(__webpack_require__(676));
 
-  XMLComment = null;
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-  XMLDeclaration = null;
+/**
+ * Convert array of 16 byte values to UUID string format of the form:
+ * XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+ */
+const byteToHex = [];
 
-  XMLDocType = null;
+for (let i = 0; i < 256; ++i) {
+  byteToHex.push((i + 0x100).toString(16).substr(1));
+}
 
-  XMLRaw = null;
+function stringify(arr, offset = 0) {
+  // Note: Be careful editing this code!  It's been tuned for performance
+  // and works in ways you may not expect. See https://github.com/uuidjs/uuid/pull/434
+  const uuid = (byteToHex[arr[offset + 0]] + byteToHex[arr[offset + 1]] + byteToHex[arr[offset + 2]] + byteToHex[arr[offset + 3]] + '-' + byteToHex[arr[offset + 4]] + byteToHex[arr[offset + 5]] + '-' + byteToHex[arr[offset + 6]] + byteToHex[arr[offset + 7]] + '-' + byteToHex[arr[offset + 8]] + byteToHex[arr[offset + 9]] + '-' + byteToHex[arr[offset + 10]] + byteToHex[arr[offset + 11]] + byteToHex[arr[offset + 12]] + byteToHex[arr[offset + 13]] + byteToHex[arr[offset + 14]] + byteToHex[arr[offset + 15]]).toLowerCase(); // Consistency check for valid UUID.  If this throws, it's likely due to one
+  // of the following:
+  // - One or more input array values don't map to a hex octet (leading to
+  // "undefined" in the uuid)
+  // - Invalid input values for the RFC `version` or `variant` fields
 
-  XMLText = null;
+  if (!(0, _validate.default)(uuid)) {
+    throw TypeError('Stringified UUID is invalid');
+  }
 
-  XMLProcessingInstruction = null;
+  return uuid;
+}
 
-  XMLDummy = null;
-
-  NodeType = null;
-
-  XMLNodeList = null;
-
-  XMLNamedNodeMap = null;
-
-  DocumentPosition = null;
-
-  module.exports = XMLNode = (function() {
-    function XMLNode(parent1) {
-      this.parent = parent1;
-      if (this.parent) {
-        this.options = this.parent.options;
-        this.stringify = this.parent.stringify;
-      }
-      this.value = null;
-      this.children = [];
-      this.baseURI = null;
-      if (!XMLElement) {
-        XMLElement = __webpack_require__(796);
-        XMLCData = __webpack_require__(657);
-        XMLComment = __webpack_require__(919);
-        XMLDeclaration = __webpack_require__(738);
-        XMLDocType = __webpack_require__(735);
-        XMLRaw = __webpack_require__(660);
-        XMLText = __webpack_require__(708);
-        XMLProcessingInstruction = __webpack_require__(491);
-        XMLDummy = __webpack_require__(956);
-        NodeType = __webpack_require__(683);
-        XMLNodeList = __webpack_require__(265);
-        XMLNamedNodeMap = __webpack_require__(451);
-        DocumentPosition = __webpack_require__(65);
-      }
-    }
-
-    Object.defineProperty(XMLNode.prototype, 'nodeName', {
-      get: function() {
-        return this.name;
-      }
-    });
-
-    Object.defineProperty(XMLNode.prototype, 'nodeType', {
-      get: function() {
-        return this.type;
-      }
-    });
-
-    Object.defineProperty(XMLNode.prototype, 'nodeValue', {
-      get: function() {
-        return this.value;
-      }
-    });
-
-    Object.defineProperty(XMLNode.prototype, 'parentNode', {
-      get: function() {
-        return this.parent;
-      }
-    });
-
-    Object.defineProperty(XMLNode.prototype, 'childNodes', {
-      get: function() {
-        if (!this.childNodeList || !this.childNodeList.nodes) {
-          this.childNodeList = new XMLNodeList(this.children);
-        }
-        return this.childNodeList;
-      }
-    });
-
-    Object.defineProperty(XMLNode.prototype, 'firstChild', {
-      get: function() {
-        return this.children[0] || null;
-      }
-    });
-
-    Object.defineProperty(XMLNode.prototype, 'lastChild', {
-      get: function() {
-        return this.children[this.children.length - 1] || null;
-      }
-    });
-
-    Object.defineProperty(XMLNode.prototype, 'previousSibling', {
-      get: function() {
-        var i;
-        i = this.parent.children.indexOf(this);
-        return this.parent.children[i - 1] || null;
-      }
-    });
-
-    Object.defineProperty(XMLNode.prototype, 'nextSibling', {
-      get: function() {
-        var i;
-        i = this.parent.children.indexOf(this);
-        return this.parent.children[i + 1] || null;
-      }
-    });
-
-    Object.defineProperty(XMLNode.prototype, 'ownerDocument', {
-      get: function() {
-        return this.document() || null;
-      }
-    });
-
-    Object.defineProperty(XMLNode.prototype, 'textContent', {
-      get: function() {
-        var child, j, len, ref2, str;
-        if (this.nodeType === NodeType.Element || this.nodeType === NodeType.DocumentFragment) {
-          str = '';
-          ref2 = this.children;
-          for (j = 0, len = ref2.length; j < len; j++) {
-            child = ref2[j];
-            if (child.textContent) {
-              str += child.textContent;
-            }
-          }
-          return str;
-        } else {
-          return null;
-        }
-      },
-      set: function(value) {
-        throw new Error("This DOM method is not implemented." + this.debugInfo());
-      }
-    });
-
-    XMLNode.prototype.setParent = function(parent) {
-      var child, j, len, ref2, results;
-      this.parent = parent;
-      if (parent) {
-        this.options = parent.options;
-        this.stringify = parent.stringify;
-      }
-      ref2 = this.children;
-      results = [];
-      for (j = 0, len = ref2.length; j < len; j++) {
-        child = ref2[j];
-        results.push(child.setParent(this));
-      }
-      return results;
-    };
-
-    XMLNode.prototype.element = function(name, attributes, text) {
-      var childNode, item, j, k, key, lastChild, len, len1, ref2, ref3, val;
-      lastChild = null;
-      if (attributes === null && (text == null)) {
-        ref2 = [{}, null], attributes = ref2[0], text = ref2[1];
-      }
-      if (attributes == null) {
-        attributes = {};
-      }
-      attributes = getValue(attributes);
-      if (!isObject(attributes)) {
-        ref3 = [attributes, text], text = ref3[0], attributes = ref3[1];
-      }
-      if (name != null) {
-        name = getValue(name);
-      }
-      if (Array.isArray(name)) {
-        for (j = 0, len = name.length; j < len; j++) {
-          item = name[j];
-          lastChild = this.element(item);
-        }
-      } else if (isFunction(name)) {
-        lastChild = this.element(name.apply());
-      } else if (isObject(name)) {
-        for (key in name) {
-          if (!hasProp.call(name, key)) continue;
-          val = name[key];
-          if (isFunction(val)) {
-            val = val.apply();
-          }
-          if (!this.options.ignoreDecorators && this.stringify.convertAttKey && key.indexOf(this.stringify.convertAttKey) === 0) {
-            lastChild = this.attribute(key.substr(this.stringify.convertAttKey.length), val);
-          } else if (!this.options.separateArrayItems && Array.isArray(val) && isEmpty(val)) {
-            lastChild = this.dummy();
-          } else if (isObject(val) && isEmpty(val)) {
-            lastChild = this.element(key);
-          } else if (!this.options.keepNullNodes && (val == null)) {
-            lastChild = this.dummy();
-          } else if (!this.options.separateArrayItems && Array.isArray(val)) {
-            for (k = 0, len1 = val.length; k < len1; k++) {
-              item = val[k];
-              childNode = {};
-              childNode[key] = item;
-              lastChild = this.element(childNode);
-            }
-          } else if (isObject(val)) {
-            if (!this.options.ignoreDecorators && this.stringify.convertTextKey && key.indexOf(this.stringify.convertTextKey) === 0) {
-              lastChild = this.element(val);
-            } else {
-              lastChild = this.element(key);
-              lastChild.element(val);
-            }
-          } else {
-            lastChild = this.element(key, val);
-          }
-        }
-      } else if (!this.options.keepNullNodes && text === null) {
-        lastChild = this.dummy();
-      } else {
-        if (!this.options.ignoreDecorators && this.stringify.convertTextKey && name.indexOf(this.stringify.convertTextKey) === 0) {
-          lastChild = this.text(text);
-        } else if (!this.options.ignoreDecorators && this.stringify.convertCDataKey && name.indexOf(this.stringify.convertCDataKey) === 0) {
-          lastChild = this.cdata(text);
-        } else if (!this.options.ignoreDecorators && this.stringify.convertCommentKey && name.indexOf(this.stringify.convertCommentKey) === 0) {
-          lastChild = this.comment(text);
-        } else if (!this.options.ignoreDecorators && this.stringify.convertRawKey && name.indexOf(this.stringify.convertRawKey) === 0) {
-          lastChild = this.raw(text);
-        } else if (!this.options.ignoreDecorators && this.stringify.convertPIKey && name.indexOf(this.stringify.convertPIKey) === 0) {
-          lastChild = this.instruction(name.substr(this.stringify.convertPIKey.length), text);
-        } else {
-          lastChild = this.node(name, attributes, text);
-        }
-      }
-      if (lastChild == null) {
-        throw new Error("Could not create any elements with: " + name + ". " + this.debugInfo());
-      }
-      return lastChild;
-    };
-
-    XMLNode.prototype.insertBefore = function(name, attributes, text) {
-      var child, i, newChild, refChild, removed;
-      if (name != null ? name.type : void 0) {
-        newChild = name;
-        refChild = attributes;
-        newChild.setParent(this);
-        if (refChild) {
-          i = children.indexOf(refChild);
-          removed = children.splice(i);
-          children.push(newChild);
-          Array.prototype.push.apply(children, removed);
-        } else {
-          children.push(newChild);
-        }
-        return newChild;
-      } else {
-        if (this.isRoot) {
-          throw new Error("Cannot insert elements at root level. " + this.debugInfo(name));
-        }
-        i = this.parent.children.indexOf(this);
-        removed = this.parent.children.splice(i);
-        child = this.parent.element(name, attributes, text);
-        Array.prototype.push.apply(this.parent.children, removed);
-        return child;
-      }
-    };
-
-    XMLNode.prototype.insertAfter = function(name, attributes, text) {
-      var child, i, removed;
-      if (this.isRoot) {
-        throw new Error("Cannot insert elements at root level. " + this.debugInfo(name));
-      }
-      i = this.parent.children.indexOf(this);
-      removed = this.parent.children.splice(i + 1);
-      child = this.parent.element(name, attributes, text);
-      Array.prototype.push.apply(this.parent.children, removed);
-      return child;
-    };
-
-    XMLNode.prototype.remove = function() {
-      var i, ref2;
-      if (this.isRoot) {
-        throw new Error("Cannot remove the root element. " + this.debugInfo());
-      }
-      i = this.parent.children.indexOf(this);
-      [].splice.apply(this.parent.children, [i, i - i + 1].concat(ref2 = [])), ref2;
-      return this.parent;
-    };
-
-    XMLNode.prototype.node = function(name, attributes, text) {
-      var child, ref2;
-      if (name != null) {
-        name = getValue(name);
-      }
-      attributes || (attributes = {});
-      attributes = getValue(attributes);
-      if (!isObject(attributes)) {
-        ref2 = [attributes, text], text = ref2[0], attributes = ref2[1];
-      }
-      child = new XMLElement(this, name, attributes);
-      if (text != null) {
-        child.text(text);
-      }
-      this.children.push(child);
-      return child;
-    };
-
-    XMLNode.prototype.text = function(value) {
-      var child;
-      if (isObject(value)) {
-        this.element(value);
-      }
-      child = new XMLText(this, value);
-      this.children.push(child);
-      return this;
-    };
-
-    XMLNode.prototype.cdata = function(value) {
-      var child;
-      child = new XMLCData(this, value);
-      this.children.push(child);
-      return this;
-    };
-
-    XMLNode.prototype.comment = function(value) {
-      var child;
-      child = new XMLComment(this, value);
-      this.children.push(child);
-      return this;
-    };
-
-    XMLNode.prototype.commentBefore = function(value) {
-      var child, i, removed;
-      i = this.parent.children.indexOf(this);
-      removed = this.parent.children.splice(i);
-      child = this.parent.comment(value);
-      Array.prototype.push.apply(this.parent.children, removed);
-      return this;
-    };
-
-    XMLNode.prototype.commentAfter = function(value) {
-      var child, i, removed;
-      i = this.parent.children.indexOf(this);
-      removed = this.parent.children.splice(i + 1);
-      child = this.parent.comment(value);
-      Array.prototype.push.apply(this.parent.children, removed);
-      return this;
-    };
-
-    XMLNode.prototype.raw = function(value) {
-      var child;
-      child = new XMLRaw(this, value);
-      this.children.push(child);
-      return this;
-    };
-
-    XMLNode.prototype.dummy = function() {
-      var child;
-      child = new XMLDummy(this);
-      return child;
-    };
-
-    XMLNode.prototype.instruction = function(target, value) {
-      var insTarget, insValue, instruction, j, len;
-      if (target != null) {
-        target = getValue(target);
-      }
-      if (value != null) {
-        value = getValue(value);
-      }
-      if (Array.isArray(target)) {
-        for (j = 0, len = target.length; j < len; j++) {
-          insTarget = target[j];
-          this.instruction(insTarget);
-        }
-      } else if (isObject(target)) {
-        for (insTarget in target) {
-          if (!hasProp.call(target, insTarget)) continue;
-          insValue = target[insTarget];
-          this.instruction(insTarget, insValue);
-        }
-      } else {
-        if (isFunction(value)) {
-          value = value.apply();
-        }
-        instruction = new XMLProcessingInstruction(this, target, value);
-        this.children.push(instruction);
-      }
-      return this;
-    };
-
-    XMLNode.prototype.instructionBefore = function(target, value) {
-      var child, i, removed;
-      i = this.parent.children.indexOf(this);
-      removed = this.parent.children.splice(i);
-      child = this.parent.instruction(target, value);
-      Array.prototype.push.apply(this.parent.children, removed);
-      return this;
-    };
-
-    XMLNode.prototype.instructionAfter = function(target, value) {
-      var child, i, removed;
-      i = this.parent.children.indexOf(this);
-      removed = this.parent.children.splice(i + 1);
-      child = this.parent.instruction(target, value);
-      Array.prototype.push.apply(this.parent.children, removed);
-      return this;
-    };
-
-    XMLNode.prototype.declaration = function(version, encoding, standalone) {
-      var doc, xmldec;
-      doc = this.document();
-      xmldec = new XMLDeclaration(doc, version, encoding, standalone);
-      if (doc.children.length === 0) {
-        doc.children.unshift(xmldec);
-      } else if (doc.children[0].type === NodeType.Declaration) {
-        doc.children[0] = xmldec;
-      } else {
-        doc.children.unshift(xmldec);
-      }
-      return doc.root() || doc;
-    };
-
-    XMLNode.prototype.dtd = function(pubID, sysID) {
-      var child, doc, doctype, i, j, k, len, len1, ref2, ref3;
-      doc = this.document();
-      doctype = new XMLDocType(doc, pubID, sysID);
-      ref2 = doc.children;
-      for (i = j = 0, len = ref2.length; j < len; i = ++j) {
-        child = ref2[i];
-        if (child.type === NodeType.DocType) {
-          doc.children[i] = doctype;
-          return doctype;
-        }
-      }
-      ref3 = doc.children;
-      for (i = k = 0, len1 = ref3.length; k < len1; i = ++k) {
-        child = ref3[i];
-        if (child.isRoot) {
-          doc.children.splice(i, 0, doctype);
-          return doctype;
-        }
-      }
-      doc.children.push(doctype);
-      return doctype;
-    };
-
-    XMLNode.prototype.up = function() {
-      if (this.isRoot) {
-        throw new Error("The root node has no parent. Use doc() if you need to get the document object.");
-      }
-      return this.parent;
-    };
-
-    XMLNode.prototype.root = function() {
-      var node;
-      node = this;
-      while (node) {
-        if (node.type === NodeType.Document) {
-          return node.rootObject;
-        } else if (node.isRoot) {
-          return node;
-        } else {
-          node = node.parent;
-        }
-      }
-    };
-
-    XMLNode.prototype.document = function() {
-      var node;
-      node = this;
-      while (node) {
-        if (node.type === NodeType.Document) {
-          return node;
-        } else {
-          node = node.parent;
-        }
-      }
-    };
-
-    XMLNode.prototype.end = function(options) {
-      return this.document().end(options);
-    };
-
-    XMLNode.prototype.prev = function() {
-      var i;
-      i = this.parent.children.indexOf(this);
-      if (i < 1) {
-        throw new Error("Already at the first node. " + this.debugInfo());
-      }
-      return this.parent.children[i - 1];
-    };
-
-    XMLNode.prototype.next = function() {
-      var i;
-      i = this.parent.children.indexOf(this);
-      if (i === -1 || i === this.parent.children.length - 1) {
-        throw new Error("Already at the last node. " + this.debugInfo());
-      }
-      return this.parent.children[i + 1];
-    };
-
-    XMLNode.prototype.importDocument = function(doc) {
-      var clonedRoot;
-      clonedRoot = doc.root().clone();
-      clonedRoot.parent = this;
-      clonedRoot.isRoot = false;
-      this.children.push(clonedRoot);
-      return this;
-    };
-
-    XMLNode.prototype.debugInfo = function(name) {
-      var ref2, ref3;
-      name = name || this.name;
-      if ((name == null) && !((ref2 = this.parent) != null ? ref2.name : void 0)) {
-        return "";
-      } else if (name == null) {
-        return "parent: <" + this.parent.name + ">";
-      } else if (!((ref3 = this.parent) != null ? ref3.name : void 0)) {
-        return "node: <" + name + ">";
-      } else {
-        return "node: <" + name + ">, parent: <" + this.parent.name + ">";
-      }
-    };
-
-    XMLNode.prototype.ele = function(name, attributes, text) {
-      return this.element(name, attributes, text);
-    };
-
-    XMLNode.prototype.nod = function(name, attributes, text) {
-      return this.node(name, attributes, text);
-    };
-
-    XMLNode.prototype.txt = function(value) {
-      return this.text(value);
-    };
-
-    XMLNode.prototype.dat = function(value) {
-      return this.cdata(value);
-    };
-
-    XMLNode.prototype.com = function(value) {
-      return this.comment(value);
-    };
-
-    XMLNode.prototype.ins = function(target, value) {
-      return this.instruction(target, value);
-    };
-
-    XMLNode.prototype.doc = function() {
-      return this.document();
-    };
-
-    XMLNode.prototype.dec = function(version, encoding, standalone) {
-      return this.declaration(version, encoding, standalone);
-    };
-
-    XMLNode.prototype.e = function(name, attributes, text) {
-      return this.element(name, attributes, text);
-    };
-
-    XMLNode.prototype.n = function(name, attributes, text) {
-      return this.node(name, attributes, text);
-    };
-
-    XMLNode.prototype.t = function(value) {
-      return this.text(value);
-    };
-
-    XMLNode.prototype.d = function(value) {
-      return this.cdata(value);
-    };
-
-    XMLNode.prototype.c = function(value) {
-      return this.comment(value);
-    };
-
-    XMLNode.prototype.r = function(value) {
-      return this.raw(value);
-    };
-
-    XMLNode.prototype.i = function(target, value) {
-      return this.instruction(target, value);
-    };
-
-    XMLNode.prototype.u = function() {
-      return this.up();
-    };
-
-    XMLNode.prototype.importXMLBuilder = function(doc) {
-      return this.importDocument(doc);
-    };
-
-    XMLNode.prototype.replaceChild = function(newChild, oldChild) {
-      throw new Error("This DOM method is not implemented." + this.debugInfo());
-    };
-
-    XMLNode.prototype.removeChild = function(oldChild) {
-      throw new Error("This DOM method is not implemented." + this.debugInfo());
-    };
-
-    XMLNode.prototype.appendChild = function(newChild) {
-      throw new Error("This DOM method is not implemented." + this.debugInfo());
-    };
-
-    XMLNode.prototype.hasChildNodes = function() {
-      return this.children.length !== 0;
-    };
-
-    XMLNode.prototype.cloneNode = function(deep) {
-      throw new Error("This DOM method is not implemented." + this.debugInfo());
-    };
-
-    XMLNode.prototype.normalize = function() {
-      throw new Error("This DOM method is not implemented." + this.debugInfo());
-    };
-
-    XMLNode.prototype.isSupported = function(feature, version) {
-      return true;
-    };
-
-    XMLNode.prototype.hasAttributes = function() {
-      return this.attribs.length !== 0;
-    };
-
-    XMLNode.prototype.compareDocumentPosition = function(other) {
-      var ref, res;
-      ref = this;
-      if (ref === other) {
-        return 0;
-      } else if (this.document() !== other.document()) {
-        res = DocumentPosition.Disconnected | DocumentPosition.ImplementationSpecific;
-        if (Math.random() < 0.5) {
-          res |= DocumentPosition.Preceding;
-        } else {
-          res |= DocumentPosition.Following;
-        }
-        return res;
-      } else if (ref.isAncestor(other)) {
-        return DocumentPosition.Contains | DocumentPosition.Preceding;
-      } else if (ref.isDescendant(other)) {
-        return DocumentPosition.Contains | DocumentPosition.Following;
-      } else if (ref.isPreceding(other)) {
-        return DocumentPosition.Preceding;
-      } else {
-        return DocumentPosition.Following;
-      }
-    };
-
-    XMLNode.prototype.isSameNode = function(other) {
-      throw new Error("This DOM method is not implemented." + this.debugInfo());
-    };
-
-    XMLNode.prototype.lookupPrefix = function(namespaceURI) {
-      throw new Error("This DOM method is not implemented." + this.debugInfo());
-    };
-
-    XMLNode.prototype.isDefaultNamespace = function(namespaceURI) {
-      throw new Error("This DOM method is not implemented." + this.debugInfo());
-    };
-
-    XMLNode.prototype.lookupNamespaceURI = function(prefix) {
-      throw new Error("This DOM method is not implemented." + this.debugInfo());
-    };
-
-    XMLNode.prototype.isEqualNode = function(node) {
-      var i, j, ref2;
-      if (node.nodeType !== this.nodeType) {
-        return false;
-      }
-      if (node.children.length !== this.children.length) {
-        return false;
-      }
-      for (i = j = 0, ref2 = this.children.length - 1; 0 <= ref2 ? j <= ref2 : j >= ref2; i = 0 <= ref2 ? ++j : --j) {
-        if (!this.children[i].isEqualNode(node.children[i])) {
-          return false;
-        }
-      }
-      return true;
-    };
-
-    XMLNode.prototype.getFeature = function(feature, version) {
-      throw new Error("This DOM method is not implemented." + this.debugInfo());
-    };
-
-    XMLNode.prototype.setUserData = function(key, data, handler) {
-      throw new Error("This DOM method is not implemented." + this.debugInfo());
-    };
-
-    XMLNode.prototype.getUserData = function(key) {
-      throw new Error("This DOM method is not implemented." + this.debugInfo());
-    };
-
-    XMLNode.prototype.contains = function(other) {
-      if (!other) {
-        return false;
-      }
-      return other === this || this.isDescendant(other);
-    };
-
-    XMLNode.prototype.isDescendant = function(node) {
-      var child, isDescendantChild, j, len, ref2;
-      ref2 = this.children;
-      for (j = 0, len = ref2.length; j < len; j++) {
-        child = ref2[j];
-        if (node === child) {
-          return true;
-        }
-        isDescendantChild = child.isDescendant(node);
-        if (isDescendantChild) {
-          return true;
-        }
-      }
-      return false;
-    };
-
-    XMLNode.prototype.isAncestor = function(node) {
-      return node.isDescendant(this);
-    };
-
-    XMLNode.prototype.isPreceding = function(node) {
-      var nodePos, thisPos;
-      nodePos = this.treePosition(node);
-      thisPos = this.treePosition(this);
-      if (nodePos === -1 || thisPos === -1) {
-        return false;
-      } else {
-        return nodePos < thisPos;
-      }
-    };
-
-    XMLNode.prototype.isFollowing = function(node) {
-      var nodePos, thisPos;
-      nodePos = this.treePosition(node);
-      thisPos = this.treePosition(this);
-      if (nodePos === -1 || thisPos === -1) {
-        return false;
-      } else {
-        return nodePos > thisPos;
-      }
-    };
-
-    XMLNode.prototype.treePosition = function(node) {
-      var found, pos;
-      pos = 0;
-      found = false;
-      this.foreachTreeNode(this.document(), function(childNode) {
-        pos++;
-        if (!found && childNode === node) {
-          return found = true;
-        }
-      });
-      if (found) {
-        return pos;
-      } else {
-        return -1;
-      }
-    };
-
-    XMLNode.prototype.foreachTreeNode = function(node, func) {
-      var child, j, len, ref2, res;
-      node || (node = this.document());
-      ref2 = node.children;
-      for (j = 0, len = ref2.length; j < len; j++) {
-        child = ref2[j];
-        if (res = func(child)) {
-          return res;
-        } else {
-          res = this.foreachTreeNode(child, func);
-          if (res) {
-            return res;
-          }
-        }
-      }
-    };
-
-    return XMLNode;
-
-  })();
-
-}).call(this);
-
+var _default = stringify;
+exports.default = _default;
 
 /***/ }),
 /* 856 */,
@@ -41873,7 +48050,7 @@ var __createBinding;
 (function (exporter) {
     var extendStatics = Object.setPrototypeOf ||
         ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+        function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
 
     __extends = function (d, b) {
         extendStatics(d, b);
@@ -41954,8 +48131,8 @@ var __createBinding;
         }
     };
 
-    __exportStar = function(m, exports) {
-        for (var p in m) if (p !== "default" && !exports.hasOwnProperty(p)) __createBinding(exports, m, p);
+    __exportStar = function(m, o) {
+        for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(o, p)) __createBinding(o, m, p);
     };
 
     __createBinding = Object.create ? (function(o, m, k, k2) {
@@ -42053,7 +48230,7 @@ var __createBinding;
     __importStar = function (mod) {
         if (mod && mod.__esModule) return mod;
         var result = {};
-        if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+        if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
         __setModuleDefault(result, mod);
         return result;
     };
@@ -42143,8 +48320,8 @@ module.exports = (string = '') => {
 
 "use strict";
 
-/*!
- * Copyright 2020, OpenTelemetry Authors
+/*
+ * Copyright The OpenTelemetry Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42159,42 +48336,53 @@ module.exports = (string = '') => {
  * limitations under the License.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-const NoopTracerProvider_1 = __webpack_require__(162);
+exports.TraceAPI = void 0;
+var NoopTracerProvider_1 = __webpack_require__(162);
+var global_utils_1 = __webpack_require__(976);
 /**
  * Singleton object which represents the entry point to the OpenTelemetry Tracing API
  */
-class TraceAPI {
+var TraceAPI = /** @class */ (function () {
     /** Empty private constructor prevents end users from constructing a new instance of the API */
-    constructor() {
-        this._tracerProvider = NoopTracerProvider_1.NOOP_TRACER_PROVIDER;
+    function TraceAPI() {
     }
     /** Get the singleton instance of the Trace API */
-    static getInstance() {
+    TraceAPI.getInstance = function () {
         if (!this._instance) {
             this._instance = new TraceAPI();
         }
         return this._instance;
-    }
+    };
     /**
      * Set the current global tracer. Returns the initialized global tracer provider
      */
-    setGlobalTracerProvider(provider) {
-        this._tracerProvider = provider;
-        return provider;
-    }
+    TraceAPI.prototype.setGlobalTracerProvider = function (provider) {
+        if (global_utils_1._global[global_utils_1.GLOBAL_TRACE_API_KEY]) {
+            // global tracer provider has already been set
+            return this.getTracerProvider();
+        }
+        global_utils_1._global[global_utils_1.GLOBAL_TRACE_API_KEY] = global_utils_1.makeGetter(global_utils_1.API_BACKWARDS_COMPATIBILITY_VERSION, provider, NoopTracerProvider_1.NOOP_TRACER_PROVIDER);
+        return this.getTracerProvider();
+    };
     /**
      * Returns the global tracer provider.
      */
-    getTracerProvider() {
-        return this._tracerProvider;
-    }
+    TraceAPI.prototype.getTracerProvider = function () {
+        var _a, _b;
+        return ((_b = (_a = global_utils_1._global[global_utils_1.GLOBAL_TRACE_API_KEY]) === null || _a === void 0 ? void 0 : _a.call(global_utils_1._global, global_utils_1.API_BACKWARDS_COMPATIBILITY_VERSION)) !== null && _b !== void 0 ? _b : NoopTracerProvider_1.NOOP_TRACER_PROVIDER);
+    };
     /**
      * Returns a tracer from the global tracer provider.
      */
-    getTracer(name, version) {
+    TraceAPI.prototype.getTracer = function (name, version) {
         return this.getTracerProvider().getTracer(name, version);
-    }
-}
+    };
+    /** Remove the global tracer provider */
+    TraceAPI.prototype.disable = function () {
+        delete global_utils_1._global[global_utils_1.GLOBAL_TRACE_API_KEY];
+    };
+    return TraceAPI;
+}());
 exports.TraceAPI = TraceAPI;
 //# sourceMappingURL=trace.js.map
 
@@ -43882,7 +50070,7 @@ function coerce (version, options) {
 
   NodeType = __webpack_require__(683);
 
-  XMLNode = __webpack_require__(855);
+  XMLNode = __webpack_require__(257);
 
   module.exports = XMLAttribute = (function() {
     function XMLAttribute(parent, name, value) {
@@ -44856,7 +51044,7 @@ exports.PollerStoppedError = PollerStoppedError;
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
 var iterate    = __webpack_require__(157)
-  , initState  = __webpack_require__(147)
+  , initState  = __webpack_require__(903)
   , terminator = __webpack_require__(939)
   ;
 
@@ -45070,14 +51258,98 @@ exports.retryHttpClientResponse = retryHttpClientResponse;
 /* 900 */,
 /* 901 */,
 /* 902 */,
-/* 903 */,
+/* 903 */
+/***/ (function(module) {
+
+// API
+module.exports = state;
+
+/**
+ * Creates initial state object
+ * for iteration over list
+ *
+ * @param   {array|object} list - list to iterate over
+ * @param   {function|null} sortMethod - function to use for keys sort,
+ *                                     or `null` to keep them as is
+ * @returns {object} - initial state object
+ */
+function state(list, sortMethod)
+{
+  var isNamedList = !Array.isArray(list)
+    , initState =
+    {
+      index    : 0,
+      keyedList: isNamedList || sortMethod ? Object.keys(list) : null,
+      jobs     : {},
+      results  : isNamedList ? {} : [],
+      size     : isNamedList ? Object.keys(list).length : list.length
+    }
+    ;
+
+  if (sortMethod)
+  {
+    // sort array keys based on it's values
+    // sort object's keys just on own merit
+    initState.keyedList.sort(isNamedList ? sortMethod : function(a, b)
+    {
+      return sortMethod(list[a], list[b]);
+    });
+  }
+
+  return initState;
+}
+
+
+/***/ }),
 /* 904 */,
 /* 905 */,
-/* 906 */,
+/* 906 */
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+//# sourceMappingURL=attributes.js.map
+
+/***/ }),
 /* 907 */,
 /* 908 */,
 /* 909 */,
-/* 910 */,
+/* 910 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+/*
+ * Copyright The OpenTelemetry Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !exports.hasOwnProperty(p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(__webpack_require__(764), exports);
+//# sourceMappingURL=index.js.map
+
+/***/ }),
 /* 911 */,
 /* 912 */,
 /* 913 */,
@@ -45905,22 +52177,8 @@ exports.SocketTimeout = 5000;
 
 "use strict";
 
-/*!
- * Copyright 2019, OpenTelemetry Authors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.CanonicalCode = void 0;
 /**
  * An enumeration of canonical status codes.
  */
@@ -46102,38 +52360,7 @@ function terminator(callback)
 
 
 /***/ }),
-/* 940 */
-/***/ (function(__unusedmodule, exports) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = void 0;
-
-/**
- * Convert array of 16 byte values to UUID string format of the form:
- * XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
- */
-const byteToHex = [];
-
-for (let i = 0; i < 256; ++i) {
-  byteToHex.push((i + 0x100).toString(16).substr(1));
-}
-
-function bytesToUuid(buf, offset_) {
-  const offset = offset_ || 0; // Note: Be careful editing this code!  It's been tuned for performance
-  // and works in ways you may not expect. See https://github.com/uuidjs/uuid/pull/434
-
-  return (byteToHex[buf[offset + 0]] + byteToHex[buf[offset + 1]] + byteToHex[buf[offset + 2]] + byteToHex[buf[offset + 3]] + '-' + byteToHex[buf[offset + 4]] + byteToHex[buf[offset + 5]] + '-' + byteToHex[buf[offset + 6]] + byteToHex[buf[offset + 7]] + '-' + byteToHex[buf[offset + 8]] + byteToHex[buf[offset + 9]] + '-' + byteToHex[buf[offset + 10]] + byteToHex[buf[offset + 11]] + byteToHex[buf[offset + 12]] + byteToHex[buf[offset + 13]] + byteToHex[buf[offset + 14]] + byteToHex[buf[offset + 15]]).toLowerCase();
-}
-
-var _default = bytesToUuid;
-exports.default = _default;
-
-/***/ }),
+/* 940 */,
 /* 941 */,
 /* 942 */,
 /* 943 */,
@@ -46227,7 +52454,7 @@ const makeError = __webpack_require__(535);
 const normalizeStdio = __webpack_require__(168);
 const {spawnedKill, spawnedCancel, setupTimeout, setExitHandler} = __webpack_require__(567);
 const {handleInput, getSpawnedResult, makeAllStream, validateInputSync} = __webpack_require__(516);
-const {mergePromise, getSpawnedPromise} = __webpack_require__(781);
+const {mergePromise, getSpawnedPromise} = __webpack_require__(188);
 const {joinCommand, parseCommand} = __webpack_require__(749);
 
 const DEFAULT_MAX_BUFFER = 1000 * 1000 * 100;
@@ -46484,7 +52711,7 @@ module.exports.node = (scriptPath, args, options = {}) => {
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty;
 
-  XMLNode = __webpack_require__(855);
+  XMLNode = __webpack_require__(257);
 
   NodeType = __webpack_require__(683);
 
@@ -46773,8 +53000,40 @@ exports.safeTrimTrailingSeparator = safeTrimTrailingSeparator;
 
 "use strict";
 
-/*!
- * Copyright 2019, OpenTelemetry Authors
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TraceFlags = void 0;
+/*
+ * Copyright The OpenTelemetry Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+var TraceFlags;
+(function (TraceFlags) {
+    /** Represents no flag set. */
+    TraceFlags[TraceFlags["NONE"] = 0] = "NONE";
+    /** Bit to represent whether trace is sampled in trace flags. */
+    TraceFlags[TraceFlags["SAMPLED"] = 1] = "SAMPLED";
+})(TraceFlags = exports.TraceFlags || (exports.TraceFlags = {}));
+//# sourceMappingURL=trace_flags.js.map
+
+/***/ }),
+/* 976 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+/*
+ * Copyright The OpenTelemetry Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46789,22 +53048,38 @@ exports.safeTrimTrailingSeparator = safeTrimTrailingSeparator;
  * limitations under the License.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.API_BACKWARDS_COMPATIBILITY_VERSION = exports.makeGetter = exports._global = exports.GLOBAL_TRACE_API_KEY = exports.GLOBAL_PROPAGATION_API_KEY = exports.GLOBAL_METRICS_API_KEY = exports.GLOBAL_CONTEXT_MANAGER_API_KEY = void 0;
+var platform_1 = __webpack_require__(910);
+exports.GLOBAL_CONTEXT_MANAGER_API_KEY = Symbol.for('io.opentelemetry.js.api.context');
+exports.GLOBAL_METRICS_API_KEY = Symbol.for('io.opentelemetry.js.api.metrics');
+exports.GLOBAL_PROPAGATION_API_KEY = Symbol.for('io.opentelemetry.js.api.propagation');
+exports.GLOBAL_TRACE_API_KEY = Symbol.for('io.opentelemetry.js.api.trace');
+exports._global = platform_1._globalThis;
 /**
- * An enumeration that represents global trace flags. These flags are
- * propagated to all child {@link Span}. These determine features such as
- * whether a Span should be traced. It is implemented as a bitmask.
+ * Make a function which accepts a version integer and returns the instance of an API if the version
+ * is compatible, or a fallback version (usually NOOP) if it is not.
+ *
+ * @param requiredVersion Backwards compatibility version which is required to return the instance
+ * @param instance Instance which should be returned if the required version is compatible
+ * @param fallback Fallback instance, usually NOOP, which will be returned if the required version is not compatible
  */
-var TraceFlags;
-(function (TraceFlags) {
-    /** Represents no flag set. */
-    TraceFlags[TraceFlags["NONE"] = 0] = "NONE";
-    /** Bit to represent whether trace is sampled in trace flags. */
-    TraceFlags[TraceFlags["SAMPLED"] = 1] = "SAMPLED";
-})(TraceFlags = exports.TraceFlags || (exports.TraceFlags = {}));
-//# sourceMappingURL=trace_flags.js.map
+function makeGetter(requiredVersion, instance, fallback) {
+    return function (version) {
+        return version === requiredVersion ? instance : fallback;
+    };
+}
+exports.makeGetter = makeGetter;
+/**
+ * A number which should be incremented each time a backwards incompatible
+ * change is made to the API. This number is used when an API package
+ * attempts to access the global API to ensure it is getting a compatible
+ * version. If the global API is not compatible with the API package
+ * attempting to get it, a NOOP API implementation will be returned.
+ */
+exports.API_BACKWARDS_COMPATIBILITY_VERSION = 0;
+//# sourceMappingURL=global-utils.js.map
 
 /***/ }),
-/* 976 */,
 /* 977 */,
 /* 978 */,
 /* 979 */,
@@ -47213,7 +53488,7 @@ var tslib = __webpack_require__(865);
 var tough = __webpack_require__(393);
 var http = __webpack_require__(605);
 var https = __webpack_require__(211);
-__webpack_require__(454);
+var node_fetch = _interopDefault(__webpack_require__(454));
 var abortController = __webpack_require__(106);
 var FormData = _interopDefault(__webpack_require__(928));
 var util = __webpack_require__(669);
@@ -47400,7 +53675,7 @@ var Constants = {
      * @const
      * @type {string}
      */
-    coreHttpVersion: "1.1.4",
+    coreHttpVersion: "1.1.8",
     /**
      * Specifies HTTP.
      *
@@ -48806,11 +55081,6 @@ var URLQuery = /** @class */ (function () {
                         break;
                     case "ParameterValue":
                         switch (currentCharacter) {
-                            case "=":
-                                parameterName = "";
-                                parameterValue = "";
-                                currentState = "Invalid";
-                                break;
                             case "&":
                                 result.set(parameterName, parameterValue);
                                 parameterName = "";
@@ -48820,11 +55090,6 @@ var URLQuery = /** @class */ (function () {
                             default:
                                 parameterValue += currentCharacter;
                                 break;
-                        }
-                        break;
-                    case "Invalid":
-                        if (currentCharacter === "&") {
-                            currentState = "ParameterName";
                         }
                         break;
                     default:
@@ -49707,11 +55972,6 @@ function isValidPort(port) {
 }
 
 // Copyright (c) Microsoft Corporation.
-var globalWithFetch = global;
-if (typeof globalWithFetch.fetch !== "function") {
-    var fetch_1 = __webpack_require__(454).default;
-    globalWithFetch.fetch = fetch_1;
-}
 function getCachedAgent(isHttps, agentCache) {
     return isHttps ? agentCache.httpsAgent : agentCache.httpAgent;
 }
@@ -49768,7 +56028,7 @@ var NodeFetchHttpClient = /** @class */ (function (_super) {
     NodeFetchHttpClient.prototype.fetch = function (input, init) {
         return tslib.__awaiter(this, void 0, void 0, function () {
             return tslib.__generator(this, function (_a) {
-                return [2 /*return*/, fetch(input, init)];
+                return [2 /*return*/, node_fetch(input, init)];
             });
         });
     };
@@ -50841,6 +57101,65 @@ var ExpiringAccessTokenCache = /** @class */ (function () {
 
 // Copyright (c) Microsoft Corporation.
 /**
+ * Helps the core-http token authentication policies with requesting a new token if we're not currently waiting for a new token.
+ */
+var AccessTokenRefresher = /** @class */ (function () {
+    function AccessTokenRefresher(credential, scopes, requiredMillisecondsBeforeNewRefresh) {
+        if (requiredMillisecondsBeforeNewRefresh === void 0) { requiredMillisecondsBeforeNewRefresh = 30000; }
+        this.credential = credential;
+        this.scopes = scopes;
+        this.requiredMillisecondsBeforeNewRefresh = requiredMillisecondsBeforeNewRefresh;
+        this.lastCalled = 0;
+    }
+    /**
+     * Returns true if the required milliseconds(defaulted to 30000) have been passed signifying
+     * that we are ready for a new refresh.
+     *
+     * @returns {boolean}
+     */
+    AccessTokenRefresher.prototype.isReady = function () {
+        // We're only ready for a new refresh if the required milliseconds have passed.
+        return (!this.lastCalled || Date.now() - this.lastCalled > this.requiredMillisecondsBeforeNewRefresh);
+    };
+    /**
+     * Stores the time in which it is called,
+     * then requests a new token,
+     * then sets this.promise to undefined,
+     * then returns the token.
+     * @param options getToken options
+     */
+    AccessTokenRefresher.prototype.getToken = function (options) {
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var token;
+            return tslib.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        this.lastCalled = Date.now();
+                        return [4 /*yield*/, this.credential.getToken(this.scopes, options)];
+                    case 1:
+                        token = _a.sent();
+                        this.promise = undefined;
+                        return [2 /*return*/, token || undefined];
+                }
+            });
+        });
+    };
+    /**
+     * Requests a new token if we're not currently waiting for a new token.
+     * Returns null if the required time between each call hasn't been reached.
+     * @param options getToken options
+     */
+    AccessTokenRefresher.prototype.refresh = function (options) {
+        if (!this.promise) {
+            this.promise = this.getToken(options);
+        }
+        return this.promise;
+    };
+    return AccessTokenRefresher;
+}());
+
+// Copyright (c) Microsoft Corporation.
+/**
  * Creates a new BearerTokenAuthenticationPolicy factory.
  *
  * @param credential The TokenCredential implementation that can supply the bearer token.
@@ -50848,12 +57167,19 @@ var ExpiringAccessTokenCache = /** @class */ (function () {
  */
 function bearerTokenAuthenticationPolicy(credential, scopes) {
     var tokenCache = new ExpiringAccessTokenCache();
+    var tokenRefresher = new AccessTokenRefresher(credential, scopes, timeBetweenRefreshAttemptsInMs);
     return {
         create: function (nextPolicy, options) {
-            return new BearerTokenAuthenticationPolicy(nextPolicy, options, credential, scopes, tokenCache);
+            return new BearerTokenAuthenticationPolicy(nextPolicy, options, tokenCache, tokenRefresher);
         }
     };
 }
+/**
+ * The automated token refresh will only start to happen at the
+ * expiration date minus the value of timeBetweenRefreshAttemptsInMs,
+ * which is by default 30 seconds.
+ */
+var timeBetweenRefreshAttemptsInMs = 30000;
 /**
  *
  * Provides a RequestPolicy that can request a token from a TokenCredential
@@ -50872,11 +57198,10 @@ var BearerTokenAuthenticationPolicy = /** @class */ (function (_super) {
      * @param scopes The scopes for which the bearer token applies.
      * @param tokenCache The cache for the most recent AccessToken returned from the TokenCredential.
      */
-    function BearerTokenAuthenticationPolicy(nextPolicy, options, credential, scopes, tokenCache) {
+    function BearerTokenAuthenticationPolicy(nextPolicy, options, tokenCache, tokenRefresher) {
         var _this = _super.call(this, nextPolicy, options) || this;
-        _this.credential = credential;
-        _this.scopes = scopes;
         _this.tokenCache = tokenCache;
+        _this.tokenRefresher = tokenRefresher;
         return _this;
     }
     /**
@@ -50905,6 +57230,26 @@ var BearerTokenAuthenticationPolicy = /** @class */ (function (_super) {
             });
         });
     };
+    /**
+     * Attempts a token update if any other time related conditionals have been reached based on the tokenRefresher class.
+     */
+    BearerTokenAuthenticationPolicy.prototype.updateTokenIfNeeded = function (options) {
+        return tslib.__awaiter(this, void 0, void 0, function () {
+            var accessToken;
+            return tslib.__generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!this.tokenRefresher.isReady()) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.tokenRefresher.refresh(options)];
+                    case 1:
+                        accessToken = _a.sent();
+                        this.tokenCache.setCachedToken(accessToken);
+                        _a.label = 2;
+                    case 2: return [2 /*return*/];
+                }
+            });
+        });
+    };
     BearerTokenAuthenticationPolicy.prototype.getToken = function (options) {
         return tslib.__awaiter(this, void 0, void 0, function () {
             var accessToken;
@@ -50913,12 +57258,20 @@ var BearerTokenAuthenticationPolicy = /** @class */ (function (_super) {
                     case 0:
                         accessToken = this.tokenCache.getCachedToken();
                         if (!(accessToken === undefined)) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this.credential.getToken(this.scopes, options)];
+                        return [4 /*yield*/, this.tokenRefresher.refresh(options)];
                     case 1:
-                        accessToken = (_a.sent()) || undefined;
+                        // Waiting for the next refresh only if the cache is unable to retrieve the access token,
+                        // which means that it has expired, or it has never been set.
+                        accessToken = _a.sent();
                         this.tokenCache.setCachedToken(accessToken);
-                        _a.label = 2;
-                    case 2: return [2 /*return*/, accessToken ? accessToken.token : undefined];
+                        return [3 /*break*/, 3];
+                    case 2:
+                        // If we still have a cached access token,
+                        // And any other time related conditionals have been reached based on the tokenRefresher class,
+                        // then attempt to refresh without waiting.
+                        this.updateTokenIfNeeded(options);
+                        _a.label = 3;
+                    case 3: return [2 /*return*/, accessToken ? accessToken.token : undefined];
                 }
             });
         });
@@ -52027,16 +58380,14 @@ Object.defineProperty(exports, 'isTokenCredential', {
         return coreAuth.isTokenCredential;
     }
 });
+exports.AccessTokenRefresher = AccessTokenRefresher;
 exports.ApiKeyCredentials = ApiKeyCredentials;
 exports.BaseRequestPolicy = BaseRequestPolicy;
 exports.BasicAuthenticationCredentials = BasicAuthenticationCredentials;
-exports.BearerTokenAuthenticationPolicy = BearerTokenAuthenticationPolicy;
 exports.Constants = Constants;
 exports.DefaultHttpClient = NodeFetchHttpClient;
-exports.DisableResponseDecompressionPolicy = DisableResponseDecompressionPolicy;
 exports.ExpiringAccessTokenCache = ExpiringAccessTokenCache;
 exports.HttpHeaders = HttpHeaders;
-exports.KeepAlivePolicy = KeepAlivePolicy;
 exports.MapperType = MapperType;
 exports.RequestPolicyOptions = RequestPolicyOptions;
 exports.RestError = RestError;
