@@ -1,3 +1,7 @@
+# Deprecated
+
+> Please use [cache option](https://github.blog/changelog/2021-07-02-github-actions-setup-node-now-supports-dependency-caching/) instead.
+
 # Setup yarn
 
 Setup yarn with cache
